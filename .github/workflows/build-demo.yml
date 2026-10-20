@@ -1,0 +1,51 @@
+name: Build and publish the demo
+
+on:
+  push:
+    tags: ["demo-v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (for example demo-v1.0.2)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the demo bundle
+        shell: pwsh
+        env:
+          PUBKEY: ${{ vars.OUNCE_PUBLIC_KEY }}
+        run: |
+          if (-not $env:PUBKEY) { throw "Repository variable OUNCE_PUBLIC_KEY is not set (Settings > Secrets and variables > Actions > Variables)." }
+          ./build_bundle.ps1 -Out "$env:RUNNER_TEMP\out" -Demo -PublicKey $env:PUBKEY
+
+      - name: Smoke test the bundle
+        shell: pwsh
+        run: |
+          $bundle = "$env:RUNNER_TEMP\out\An Ounce of Prevention"
+          & "$bundle\python\python.exe" -I ci_smoke.py "$bundle"
+          if ($LASTEXITCODE -ne 0) { throw "Smoke test failed" }
+
+      - name: Publish the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          $zip = "$env:RUNNER_TEMP\out\An-Ounce-of-Prevention-Demo.zip"
+          $notes = "Free 30-day demo of An Ounce of Prevention for Windows. Extract the zip, then read 'READ ME FIRST.txt'. Built automatically."
+          gh release view $env:TAG 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG $zip --clobber
+          } else {
+            gh release create $env:TAG $zip --title "Demo $env:TAG" --notes $notes --latest
+          }
+          if ($LASTEXITCODE -ne 0) { throw "Publishing failed" }
