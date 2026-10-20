@@ -1,0 +1,6 @@
+AssetID,Description,Category,SerialNumber,Color,Motor,Transmission,Fuel,Maintenance_Protocol,Current_Meter
+PUMP-101,Centrifugal Pump 101,Pumps/Compressors,SN-48213,Blue,Electric,Direct,None,Preventive Maintenance (PM),1250
+PUMP-102,Centrifugal Pump 102,Pumps/Compressors,SN-48214,Blue,Electric,Direct,None,Preventive Maintenance (PM),980
+COMP-201,Air Compressor 201,Pumps/Compressors,SN-77120,Green,Electric,Belt,None,Preventive Maintenance (PM),3410
+CONV-301,Packing Line Conveyor 301,Conveyors,SN-30551,Grey,Electric,Gearbox,None,Predictive Maintenance (PdM),5200
+FORK-401,Forklift 401,Forklifts,SN-90876,Yellow,Electric,Automatic,Battery,Preventive Maintenance (PM),2175

@@ -1,0 +1,11 @@
+AssetID,Category,Item,Day
+PUMP-101,,Check oil level,
+,Pumps/Compressors,Walk around and look for leaks,Daily
+,Pumps/Compressors,Listen for unusual noise or vibration,Daily
+,Pumps/Compressors,Grease the bearings,Friday
+COMP-201,,Drain the air tank,Daily
+,Conveyors,Check belt tracking and tension,Daily
+,Conveyors,Test the emergency stop,Monday
+,Forklifts,Check tires and forks,Daily
+,Forklifts,Test horn and lights,Daily
+,Forklifts,Check battery water level,Wednesday

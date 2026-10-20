@@ -1,0 +1,6 @@
+PartNumber,Description,Location,Supplier,QtyOnHand,ReorderPoint,ReorderQty,UnitCost
+BRG-6205,Ball bearing 6205,Shelf A1,Acme Supply,8,4,10,9.75
+SEAL-M32,Mechanical seal 32 mm,Shelf A2,Acme Supply,2,1,2,185.00
+FLT-AIR-12,Air filter element,Shelf B1,Northern Filters,4,2,6,38.00
+OIL-CMP-4L,Compressor oil 4 L,Shelf B3,Northern Filters,6,2,6,64.00
+GRS-CART,Grease cartridge,Shelf A4,Acme Supply,24,10,24,4.25

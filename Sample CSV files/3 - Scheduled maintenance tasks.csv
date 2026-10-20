@@ -1,0 +1,9 @@
+AssetID,TabGroup,TaskName,Days_Between,Meter_Between,ManHours,EstimatedPartsCost,ToolsNeeded,TaskDescription,PersonnelQualifications,SafetyPrecautions,RequiredConsumables,Date_Last_Done,Meter_At_Last
+PUMP-101,Prevention A,Grease bearings,30,0,0.5,12.50,Grease gun,Grease both bearings until fresh grease shows,Mechanic,Lock out and tag out,Bearing grease,,
+PUMP-101,Prevention B,Replace mechanical seal,365,0,3,185.00,Seal puller set,Replace the shaft seal and check for leaks,Millwright,Lock out and tag out,Mechanical seal,,
+PUMP-102,Prevention A,Grease bearings,30,0,0.5,12.50,Grease gun,Grease both bearings until fresh grease shows,Mechanic,Lock out and tag out,Bearing grease,,
+COMP-201,Prevention A,Change compressor oil,0,500,1.5,64.00,Drain pan and wrench,Drain and refill with the correct oil,Mechanic,Depressurize and lock out,Compressor oil,,
+COMP-201,Prevention B,Replace air filter,180,0,0.75,38.00,Screwdriver,Replace the intake air filter,Mechanic,Lock out and tag out,Air filter,,
+CONV-301,Prevention A,Lubricate chain and rollers,14,0,0.5,8.00,Oil can,Oil the drive chain and end rollers,Operator,Lock out before reaching in,Chain oil,,
+FORK-401,Compliance,Annual safety inspection,365,0,2,0,Inspection checklist,Full inspection by a certified person,Certified inspector,Park and chock the truck,None,,
+FORK-401,Prevention A,Service battery and cables,90,0,1,20.00,Hydrometer,Check cells and clean terminals,Mechanic,Wear eye and skin protection,Distilled water,,
