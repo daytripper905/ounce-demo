@@ -686,6 +686,52 @@ SAMPLE_GROUPS = {
             ('Prevention C', 'Annual extinguisher service & hydrostatic testing schedule', 365, 0, 4.0, 'Annual maintenance of portable extinguishers; hydrostatic tests as due.', 'Certified Fire Technician', 'None', 300.0, 'Tags, agent', 'Service kit'),
             ('Compliance', 'Annual fire alarm & sprinkler inspection and certificate', 365, 0, 6.0, 'Full annual inspection by a certified company; file the certificate for the fire authority.', 'Certified Inspector', 'Notify monitoring', 600.0, 'None', 'Test equipment'),
         ]),
+    'IT & Network': dict(
+        prefix='IT',
+        model="Office Network & Computers IT-{i}",
+        labels=("Devices Covered", "Router / Firewall", "Switch & Wi-Fi", "Backup Method", "Operating Systems"),
+        parts=("Computers & Laptops:", "Switches, Wi-Fi & Router:", "Servers & Storage:", "Backup Drives & Media:", "Power & UPS:", "Cabling, Racks & Printers:"),
+        attrs=[("Devices", "25 computers, 2 servers, 1 router", "Inventory list kept up to date"), ("Backup", "Nightly to external drive + weekly off-site copy", "Restore tested every quarter"), ("Operating systems", "Mostly Windows; some Mac and Linux", "All still supported by their makers")],
+        checklist=[
+            ("Check last night's backup finished without errors", "Check antivirus / security app shows protected"),
+            ("Check server and network status lights", "Check internet connection and Wi-Fi are working"),
+            ("Check UPS shows normal, no alarms", "Check server room temperature is normal"),
+            ("Check free disk space on servers", "Review any warnings or alerts on screen"),
+            ("Check server room door is locked", "Check cables and racks are tidy and not blocked"),
+            ("Check for pending system updates (Windows Update, Mac Software Update, Linux updates)|Monday", "Restart any computer that has been on for over a week|Monday"),
+            ("Check free space: keep at least 20% free on every drive|Tuesday", "Check backup drive is plugged in, powered and healthy|Tuesday"),
+            ("Review security alerts and failed sign-in warnings|Wednesday", "Check printers, scanners and shared folders work|Wednesday"),
+            ("Check UPS battery and alarm lights, and that nothing extra is plugged in|Thursday", "Look for unknown users on computers and in the router|Thursday"),
+            ("Open one file from the backup copy to prove it works|Friday", "Check laptops and tablets were updated and backed up this week|Friday"),
+            ("Check no new AI tools or browser add-ons were installed without approval|Monday", "Check AI assistants are not left signed in on shared computers|Monday"),
+        ],
+        tasks=[
+            # --- Prevention A: monthly routines ---
+            ("Prevention A", "Review backup logs & update status", 7, 0, 0.5, "Open the backup program and read the last week of results. Fix any failed job the same day. Check every computer shows its updates and antivirus as current.", "IT Technician", "None", 0.0, "None", "Admin console"),
+            ("Prevention A", "Install operating system updates (Windows, Mac, Linux)", 30, 0, 2.0, "Do this outside working hours. Windows: Settings > Windows Update > Check for updates. Mac: System Settings > General > Software Update. Linux: run the package update (for example sudo apt update, then sudo apt upgrade, or sudo dnf upgrade). Restart, then note what was installed.", "IT Technician", "Warn users first; back up before big updates", 0.0, "None", "Update tool"),
+            ("Prevention A", "Update web browsers, office programs & business software", 30, 0, 1.0, "Update each browser, PDF reader, office suite, accounting and industry program to the latest version from its maker. Remove programs nobody uses.", "IT Technician", "None", 0.0, "None", "Software list"),
+            ("Prevention A", "Run antivirus scan & check protection status", 30, 0, 1.0, "Windows: open Windows Security and check every item is green, then run a full scan on one computer. Mac and Linux: confirm the scanner or built-in protection is on and its last run is recent. Record the result.", "IT Technician", "None", 0.0, "None", "Security app"),
+            ("Prevention A", "Check disk health & free space", 30, 0, 1.0, "Check free space on every drive (keep 20% free). Windows: Settings > System > Storage. Mac: Disk Utility, run First Aid. Linux: df -h, and smartctl -H on each drive if installed. Replace any drive that reports a warning.", "IT Technician", "Back up first", 0.0, "None", "Disk tools"),
+            ("Prevention A", "Update the list of AI tools & connected apps", 30, 0, 0.5, "Keep a list of AI assistants, browser add-ons, plug-ins and connected apps in use: who uses each one, and which files, mailboxes or accounts it can reach.", "IT Manager", "None", 0.0, "None", "Tool list"),
+            # --- Prevention B: quarterly checks ---
+            ("Prevention B", "Test restore from backup", 90, 0, 1.5, "Restore one file and one whole folder from the backup to a different location and open them. Keep three copies of important data: working copy, backup, and one stored off-site.", "IT Technician", "None", 0.0, "None", "Backup software"),
+            ("Prevention B", "Firewall & router check (firmware, passwords, settings)", 90, 0, 1.5, "Log in to the router. Install any firmware update. Make sure the admin password is not the factory one. Turn off remote administration, WPS and any port forwarding you do not need. Keep guest Wi-Fi separate from the office network.", "Network Technician", "Plan an outage window", 0.0, "None", "Admin login"),
+            ("Prevention B", "Wi-Fi & network health check", 90, 0, 1.5, "Test internet speed and Wi-Fi signal in each work area. Remove unknown devices from the router list. Label cables and update the switch-port list. Check nothing is plugged into an overloaded power bar.", "Network Technician", "None", 0.0, "None", "Speed test, labels"),
+            ("Prevention B", "Check laptop encryption & screen locks", 90, 0, 1.0, "Confirm every laptop encrypts its drive (Windows BitLocker or device encryption, Mac FileVault, Linux disk encryption), locks its screen after a few minutes, and has a recovery key stored safely.", "IT Technician", "Store recovery keys safely", 0.0, "None", "System settings"),
+            ("Prevention B", "Check renewal dates: domain, hosting, email & software", 90, 0, 0.5, "List the expiry or renewal date for the domain name, website hosting, email service, antivirus and every software licence. Set a reminder a month before each date.", "IT Manager", "None", 0.0, "None", "Renewal list"),
+            ("Prevention B", "Review AI tool permissions & updates", 90, 0, 1.5, "Check each AI tool and connected app for new permissions or changed settings after updates. Remove access that is not needed, and keep human approval on actions that send, delete or pay.", "IT Manager", "None", 0.0, "None", "Tool list"),
+            ("Prevention B", "Review who can reach what", 90, 0, 1.0, "Give each person, program and automation only the access its job needs. Remove shared logins and access nobody uses.", "IT Manager", "None", 0.0, "None", "Account list"),
+            # --- Prevention C: every 6-12 months ---
+            ("Prevention C", "Change passwords & access keys used by tools and automations", 180, 0, 1.5, "Replace the passwords, API keys and tokens used by AI tools, backup jobs and other automations; update each program that uses them. Use a password manager, and turn on two-step sign-in wherever it is offered.", "IT Technician", "Test each connection afterwards", 0.0, "None", "Password manager"),
+            ("Prevention C", "Annual UPS battery test & dust cleaning", 365, 0, 3.0, "Test UPS runtime, replace weak batteries, and blow dust from computers, switches and racks with compressed air.", "IT Technician", "Shut down equipment first; static care", 200.0, "UPS batteries, compressed air", "Hand tools"),
+            ("Prevention C", "Hardware age & upgrade review", 365, 0, 2.0, "List the age and warranty end date of every computer, router, switch and drive. Plan to replace computers and drives older than about 4 to 5 years, and add memory or a solid-state drive to slow but sound machines. Confirm every operating system and program is still supported by its maker, and budget for next year.", "IT Manager", "None", 0.0, "None", "Equipment list"),
+            ("Prevention C", "Full backup & recovery drill", 365, 0, 3.0, "Make a complete image of the main computer, keep a copy off-site, and practise rebuilding from it on a spare machine, or at least confirm the image opens. Time how long it takes.", "IT Technician", "Use a spare machine, not the live one", 0.0, "None", "Backup software, spare PC"),
+            ("Prevention C", "Cable, rack & printer tidy-up", 365, 0, 2.0, "Re-label cables, tidy racks, check power bars are not overloaded or chained together, clean printer heads and replace worn parts.", "IT Technician", "Power down first", 50.0, "Labels, cable ties", "Hand tools"),
+            # --- Compliance: yearly records ---
+            ("Compliance", "Annual user account & password review", 365, 0, 2.0, "Remove accounts of people who have left, review administrator rights and shared passwords.", "IT Manager", "None", 0.0, "None", "Account list"),
+            ("Compliance", "Annual review of AI-use rules & incident plan", 365, 0, 2.0, "Update the written rules for AI tools (what data may be entered, who approves new tools) and the steps to follow if a tool misbehaves: pause its access, change the passwords it used, record what happened.", "IT Manager", "None", 0.0, "None", "Written rules"),
+            ("Compliance", "Annual IT recovery plan review", 365, 0, 2.0, "Update the one-page plan: who to call for IT help and for the internet provider, where passwords and licence keys are kept, and the steps to get back to work if the office or main computer is lost.", "IT Manager", "None", 0.0, "None", "Recovery plan"),
+        ]),
 }
 
 FULL_CATEGORIES_LIST = []
@@ -812,7 +858,7 @@ def get_default_checklist_df(category):
 
 DEFAULT_LABOR_RATE = 85.0   # $/hr, used until it is changed under Settings
 DEFAULT_BACKUP_KEEP = 60    # newest backups to keep, until changed under Settings
-APP_VERSION = "1.0.5"
+APP_VERSION = "1.0.6"
 
 def get_setting(key, default=""):
     """Read one value from App_Settings. Never raises; returns default when missing or unreadable."""
@@ -3063,6 +3109,11 @@ SAMPLE_PARTS = {
     "Fire & Life Safety": [("FLS-EXT-ABC10", "ABC extinguisher 10 lb, recharged", "Rack Z1", "Safety First Supply", 4, 2, 4, 78.00),
                            ("FLS-SMK-DET", "Smoke detector head", "Rack Z2", "Safety First Supply", 10, 4, 10, 23.00),
                            ("FLS-EMG-LAMP", "Emergency light battery pack", "Rack Z2", "Safety First Supply", 3, 2, 4, 34.00)],
+    "IT & Network": [("IT-UPS-BATT", "UPS replacement battery pack", "Shelf N1", "Office Tech Supply", 2, 1, 2, 95.00),
+                     ("IT-CAT6-3M", "Network patch cable, 3 m (pack of 10)", "Shelf N1", "Office Tech Supply", 4, 2, 4, 28.00),
+                     ("IT-AIR-CAN", "Compressed air duster (case of 6)", "Shelf N2", "Office Tech Supply", 3, 1, 2, 34.00),
+                     ("IT-BKP-2TB", "External backup drive, 2 TB", "Shelf N2", "Office Tech Supply", 2, 1, 2, 89.00),
+                     ("IT-SSD-500", "Solid-state drive, 500 GB", "Shelf N3", "Office Tech Supply", 2, 1, 2, 68.00)],
 }
 
 def _seed_sample_parts(cursor):
