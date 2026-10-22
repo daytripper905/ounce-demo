@@ -129,7 +129,7 @@ st.markdown(
     <style>
     html, body, [class*="css"] { font-family: Arial, sans-serif; font-size: 12.0pt; }
     [data-testid="stSidebar"] { min-width: 235px !important; max-width: 260px !important; }
-    .block-container, [data-testid="block-container"], .main .block-container { padding-top: 3.0rem !important; padding-bottom: 2rem !important; }
+    .block-container, [data-testid="block-container"], .main .block-container { padding-top: 3.0rem !important; padding-bottom: 2rem !important; padding-left: 1.6rem !important; padding-right: 1.6rem !important; max-width: 100% !important; }
     button[data-baseweb="tab"] p, [role="tab"] p { font-size: 12.0pt !important; font-weight: bold !important; }
     [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] span { font-size: 15.0pt !important; font-weight: 800 !important; color: #000000 !important; }
     .stRadio p, div[role="radiogroup"] label { white-space: nowrap !important; }
@@ -520,21 +520,6 @@ SAMPLE_GROUPS = {
             ('Prevention C', 'Annual outage: turbine, boiler & valve inspection', 365, 8000, 80.0, 'Planned outage: borescope turbine, inspect boiler tubes, overhaul key valves.', 'Outage Crew', 'Confined space; LOTO', 15000.0, 'Gaskets, parts', 'Outage tools'),
             ('Compliance', 'Boiler, pressure vessel & safety valve certification', 365, 0, 8.0, 'Certified inspection of boiler and pressure vessels; test safety valves; renew certificates.', 'Certified Inspector', 'Confined space', 1500.0, 'Tags, gaskets', 'Test equipment'),
         ]),
-    'Renewables': dict(
-        prefix='RENEW',
-        model='Renewable Generating Site {i} (Wind / Solar)',
-        labels=('Rated Power (MW)', 'Technology (Wind/Solar)', 'Inverter / Generator Type', 'Tracker / Pitch System', 'Grid Voltage (kV)'),
-        parts=('Turbine / Array:', 'Gearbox, Generator & Inverters:', 'Tracker / Pitch & Yaw Systems:', 'Transformer & Switchgear:', 'SCADA & Communications:', 'Tower, Foundation & Fencing:'),
-        attrs=[('Rated power', '2.5 MW', 'Per site'), ('Technology', 'Wind and solar', 'Hybrid example'), ('Grid connection', '34.5 kV', 'Via pad-mount transformer')],
-        checklist=[('Inspect inverter cooling fans & filters', 'Verify SCADA output vs. weather'), ('Check yaw drive gearbox oil level', 'Inspect rotor brake pad wear'), ('Check string combiner box fuses', 'Inspect panel & rack connections (visual)'), ('Test emergency stop & rotor lock', 'Check tower base for oil leaks & loose bolts'), ('Verify transformer oil temperature & level', 'Inspect fencing, signage & cameras')],
-        tasks=[
-            ('Prevention A', 'SCADA review & alarm check', 7, 168, 0.5, 'Review production against weather data, clear alarms and note under-performing strings or turbines.', 'Technician', 'None', 0.0, 'None', 'Laptop'),
-            ('Prevention A', 'Site walk-round: fencing, access & visible damage', 30, 0, 1.0, 'Walk the site; check fencing, signage, vegetation, visible damage and animal activity.', 'Technician', 'Site hazard awareness', 0.0, 'None', 'Checklist'),
-            ('Prevention B', 'Inverter & combiner box service', 180, 4000, 3.0, 'Clean filters and fans, torque terminations, thermal scan combiners and inverters.', 'Electrician', 'Arc flash PPE; LOTO', 100.0, 'Filters', 'IR camera, torque tools'),
-            ('Prevention B', 'Gearbox oil, yaw & pitch system check', 180, 4000, 5.0, 'Sample gearbox oil, check yaw and pitch drives, grease main bearing.', 'Wind Technician', 'Climb safety; lockout rotor', 350.0, 'Oil, grease', 'Grease gun'),
-            ('Prevention C', 'Annual bolt torque & transformer service', 365, 8000, 16.0, 'Torque tower and blade bolts, service the pad-mount transformer, test protection.', 'Master Technician', 'Climb safety; LOTO', 1200.0, 'Oil, hardware', 'Torque tools'),
-            ('Compliance', 'Electrical protection & grounding test', 365, 0, 6.0, 'Test relays, breakers and grounding; update the single-line records.', 'Certified Electrician', 'Arc flash PPE', 800.0, 'None', 'Relay test set'),
-        ]),
     'HVAC & Boilers': dict(
         prefix='HVAC',
         model='Rooftop Unit RTU-{i} (25-ton)',
@@ -580,21 +565,6 @@ SAMPLE_GROUPS = {
             ('Prevention B', 'Brake, hydraulic & tire inspection', 180, 500, 2.0, 'Inspect brakes and hoses, check hydraulic fluid, measure tire wear.', 'Mechanic', 'Truck blocked', 80.0, 'Hydraulic fluid', 'Gauges'),
             ('Prevention C', 'Annual mast & chain overhaul', 365, 2000, 6.0, 'Measure chain stretch, inspect rollers, rails and cylinders; replace worn parts.', 'Mechanic', 'Mast blocked', 500.0, 'Chains, bushings', 'Chain gauge'),
             ('Compliance', 'Annual forklift safety inspection', 365, 0, 1.5, 'Certified annual inspection including load test; keep the record with the truck.', 'Certified Inspector', 'Load test area clear', 150.0, 'None', 'Test weights'),
-        ]),
-    'Construction': dict(
-        prefix='CONST',
-        model='Excavator / Loader CE-{i}',
-        labels=('Operating Weight (kg)', 'Engine Power (HP)', 'Bucket Capacity (m3)', 'Track / Wheel Type', 'Fleet No.'),
-        parts=('Engine & Cooling:', 'Hydraulic Pumps & Valves:', 'Undercarriage / Axles:', 'Boom, Stick & Attachments:', 'Cab & Controls:', 'Safety & Lighting:'),
-        attrs=[('Operating weight', '20 tonnes', 'Tracked excavator example'), ('Engine', '150 HP diesel', 'Tier-rated'), ('Attachments', 'Bucket, thumb, hammer', 'Pins greased daily')],
-        checklist=[('Check engine oil, coolant & hydraulic oil', 'Inspect tracks / tires & undercarriage'), ('Grease boom, stick & bucket pins', 'Check hoses & cylinders for leaks'), ('Inspect bucket teeth & cutting edge', 'Test lights, alarm & camera'), ('Check air filter restriction indicator', 'Clean cab glass, mirrors & steps'), ('Verify fire extinguisher & first aid kit', 'Check fuel level & drain water separator')],
-        tasks=[
-            ('Prevention A', 'Daily walk-around & greasing', 1, 10, 0.5, 'Grease pins and bushings, check fluids, hoses and ground-engaging tools.', 'Operator', 'Machine parked, bucket down', 8.0, 'Grease', 'Grease gun'),
-            ('Prevention A', 'Air filter & radiator cleaning', 14, 100, 0.5, 'Clean or replace the air filter element, blow out radiator and coolers.', 'Operator', 'Engine off', 20.0, 'Filter as needed', 'Compressed air'),
-            ('Prevention B', '250-hour service: oil & filters', 90, 250, 2.0, 'Change engine oil and filters, fuel filters, check coolant and belts, take oil sample.', 'Mechanic', 'Machine locked out', 220.0, 'Oil, filters', 'Hand tools'),
-            ('Prevention B', 'Undercarriage & final drive check', 90, 500, 2.0, 'Measure track wear, check rollers, idlers, sprockets and final drive oil.', 'Mechanic', 'Machine blocked', 100.0, 'Gear oil', 'Measuring gauge'),
-            ('Prevention C', '1000-hour hydraulic & final drive service', 365, 1000, 5.0, 'Change hydraulic oil and filters, swing and final drive oils, test pump pressures.', 'Mechanic', 'Pressure released', 800.0, 'Oil, filters', 'Pressure gauges'),
-            ('Compliance', 'Annual safety & ROPS/FOPS inspection', 365, 0, 2.0, 'Annual documented inspection of structure, guarding, brakes and safety devices.', 'Certified Inspector', 'None', 150.0, 'None', 'Checklist'),
         ]),
     'Agriculture': dict(
         prefix='AG',
@@ -698,31 +668,31 @@ SAMPLE_GROUPS = {
             ("Check UPS shows normal, no alarms", "Check server room temperature is normal"),
             ("Check free disk space on servers", "Review any warnings or alerts on screen"),
             ("Check server room door is locked", "Check cables and racks are tidy and not blocked"),
-            ("Check for pending system updates (Windows Update, Mac Software Update, Linux updates)|Monday", "Restart any computer that has been on for over a week|Monday"),
-            ("Check free space: keep at least 20% free on every drive|Tuesday", "Check backup drive is plugged in, powered and healthy|Tuesday"),
+            ("Check for pending system updates on every computer|Monday", "Restart any computer that has been on for over a week|Monday"),
+            ("Keep at least 20% free space on every drive|Tuesday", "Check backup drive is plugged in, powered and healthy|Tuesday"),
             ("Review security alerts and failed sign-in warnings|Wednesday", "Check printers, scanners and shared folders work|Wednesday"),
-            ("Check UPS battery and alarm lights, and that nothing extra is plugged in|Thursday", "Look for unknown users on computers and in the router|Thursday"),
+            ("Check nothing extra is plugged into the UPS or power bars|Thursday", "Look for unknown users on computers and in the router|Thursday"),
             ("Open one file from the backup copy to prove it works|Friday", "Check laptops and tablets were updated and backed up this week|Friday"),
             ("Check no new AI tools or browser add-ons were installed without approval|Monday", "Check AI assistants are not left signed in on shared computers|Monday"),
         ],
         tasks=[
             # --- Prevention A: monthly routines ---
             ("Prevention A", "Review backup logs & update status", 7, 0, 0.5, "Open the backup program and read the last week of results. Fix any failed job the same day. Check every computer shows its updates and antivirus as current.", "IT Technician", "None", 0.0, "None", "Admin console"),
-            ("Prevention A", "Install operating system updates (Windows, Mac, Linux)", 30, 0, 2.0, "Do this outside working hours. Windows: Settings > Windows Update > Check for updates. Mac: System Settings > General > Software Update. Linux: run the package update (for example sudo apt update, then sudo apt upgrade, or sudo dnf upgrade). Restart, then note what was installed.", "IT Technician", "Warn users first; back up before big updates", 0.0, "None", "Update tool"),
-            ("Prevention A", "Update web browsers, office programs & business software", 30, 0, 1.0, "Update each browser, PDF reader, office suite, accounting and industry program to the latest version from its maker. Remove programs nobody uses.", "IT Technician", "None", 0.0, "None", "Software list"),
+            ("Prevention A", "Install OS updates (Windows, Mac, Linux)", 30, 0, 2.0, "Do this outside working hours. Windows: Settings > Windows Update > Check for updates. Mac: System Settings > General > Software Update. Linux: run the package update (for example sudo apt update, then sudo apt upgrade, or sudo dnf upgrade). Restart, then note what was installed.", "IT Technician", "Warn users first; back up before big updates", 0.0, "None", "Update tool"),
+            ("Prevention A", "Update browsers, office & business programs", 30, 0, 1.0, "Update each browser, PDF reader, office suite, accounting and industry program to the latest version from its maker. Remove programs nobody uses.", "IT Technician", "None", 0.0, "None", "Software list"),
             ("Prevention A", "Run antivirus scan & check protection status", 30, 0, 1.0, "Windows: open Windows Security and check every item is green, then run a full scan on one computer. Mac and Linux: confirm the scanner or built-in protection is on and its last run is recent. Record the result.", "IT Technician", "None", 0.0, "None", "Security app"),
             ("Prevention A", "Check disk health & free space", 30, 0, 1.0, "Check free space on every drive (keep 20% free). Windows: Settings > System > Storage. Mac: Disk Utility, run First Aid. Linux: df -h, and smartctl -H on each drive if installed. Replace any drive that reports a warning.", "IT Technician", "Back up first", 0.0, "None", "Disk tools"),
             ("Prevention A", "Update the list of AI tools & connected apps", 30, 0, 0.5, "Keep a list of AI assistants, browser add-ons, plug-ins and connected apps in use: who uses each one, and which files, mailboxes or accounts it can reach.", "IT Manager", "None", 0.0, "None", "Tool list"),
             # --- Prevention B: quarterly checks ---
             ("Prevention B", "Test restore from backup", 90, 0, 1.5, "Restore one file and one whole folder from the backup to a different location and open them. Keep three copies of important data: working copy, backup, and one stored off-site.", "IT Technician", "None", 0.0, "None", "Backup software"),
-            ("Prevention B", "Firewall & router check (firmware, passwords, settings)", 90, 0, 1.5, "Log in to the router. Install any firmware update. Make sure the admin password is not the factory one. Turn off remote administration, WPS and any port forwarding you do not need. Keep guest Wi-Fi separate from the office network.", "Network Technician", "Plan an outage window", 0.0, "None", "Admin login"),
+            ("Prevention B", "Firewall & router check", 90, 0, 1.5, "Log in to the router. Install any firmware update. Make sure the admin password is not the factory one. Turn off remote administration, WPS and any port forwarding you do not need. Keep guest Wi-Fi separate from the office network.", "Network Technician", "Plan an outage window", 0.0, "None", "Admin login"),
             ("Prevention B", "Wi-Fi & network health check", 90, 0, 1.5, "Test internet speed and Wi-Fi signal in each work area. Remove unknown devices from the router list. Label cables and update the switch-port list. Check nothing is plugged into an overloaded power bar.", "Network Technician", "None", 0.0, "None", "Speed test, labels"),
             ("Prevention B", "Check laptop encryption & screen locks", 90, 0, 1.0, "Confirm every laptop encrypts its drive (Windows BitLocker or device encryption, Mac FileVault, Linux disk encryption), locks its screen after a few minutes, and has a recovery key stored safely.", "IT Technician", "Store recovery keys safely", 0.0, "None", "System settings"),
-            ("Prevention B", "Check renewal dates: domain, hosting, email & software", 90, 0, 0.5, "List the expiry or renewal date for the domain name, website hosting, email service, antivirus and every software licence. Set a reminder a month before each date.", "IT Manager", "None", 0.0, "None", "Renewal list"),
+            ("Prevention B", "Check domain, hosting & software renewals", 90, 0, 0.5, "List the expiry or renewal date for the domain name, website hosting, email service, antivirus and every software licence. Set a reminder a month before each date.", "IT Manager", "None", 0.0, "None", "Renewal list"),
             ("Prevention B", "Review AI tool permissions & updates", 90, 0, 1.5, "Check each AI tool and connected app for new permissions or changed settings after updates. Remove access that is not needed, and keep human approval on actions that send, delete or pay.", "IT Manager", "None", 0.0, "None", "Tool list"),
             ("Prevention B", "Review who can reach what", 90, 0, 1.0, "Give each person, program and automation only the access its job needs. Remove shared logins and access nobody uses.", "IT Manager", "None", 0.0, "None", "Account list"),
             # --- Prevention C: every 6-12 months ---
-            ("Prevention C", "Change passwords & access keys used by tools and automations", 180, 0, 1.5, "Replace the passwords, API keys and tokens used by AI tools, backup jobs and other automations; update each program that uses them. Use a password manager, and turn on two-step sign-in wherever it is offered.", "IT Technician", "Test each connection afterwards", 0.0, "None", "Password manager"),
+            ("Prevention C", "Change tool & automation passwords/keys", 180, 0, 1.5, "Replace the passwords, API keys and tokens used by AI tools, backup jobs and other automations; update each program that uses them. Use a password manager, and turn on two-step sign-in wherever it is offered.", "IT Technician", "Test each connection afterwards", 0.0, "None", "Password manager"),
             ("Prevention C", "Annual UPS battery test & dust cleaning", 365, 0, 3.0, "Test UPS runtime, replace weak batteries, and blow dust from computers, switches and racks with compressed air.", "IT Technician", "Shut down equipment first; static care", 200.0, "UPS batteries, compressed air", "Hand tools"),
             ("Prevention C", "Hardware age & upgrade review", 365, 0, 2.0, "List the age and warranty end date of every computer, router, switch and drive. Plan to replace computers and drives older than about 4 to 5 years, and add memory or a solid-state drive to slow but sound machines. Confirm every operating system and program is still supported by its maker, and budget for next year.", "IT Manager", "None", 0.0, "None", "Equipment list"),
             ("Prevention C", "Full backup & recovery drill", 365, 0, 3.0, "Make a complete image of the main computer, keep a copy off-site, and practise rebuilding from it on a spare machine, or at least confirm the image opens. Time how long it takes.", "IT Technician", "Use a spare machine, not the live one", 0.0, "None", "Backup software, spare PC"),
@@ -858,7 +828,7 @@ def get_default_checklist_df(category):
 
 DEFAULT_LABOR_RATE = 85.0   # $/hr, used until it is changed under Settings
 DEFAULT_BACKUP_KEEP = 60    # newest backups to keep, until changed under Settings
-APP_VERSION = "1.0.6"
+APP_VERSION = "1.0.7"
 
 def get_setting(key, default=""):
     """Read one value from App_Settings. Never raises; returns default when missing or unreadable."""
@@ -3076,9 +3046,6 @@ SAMPLE_PARTS = {
     "Thermal Plant": [("THP-GSKT-SW", "Spiral wound gasket, 6 in.", "Rack P1", "Plant Industrial", 10, 4, 10, 17.00),
                       ("THP-VALVE-PK", "Valve packing set, graphite", "Rack P1", "Plant Industrial", 6, 3, 6, 21.50),
                       ("THP-SENS-RTD", "RTD temperature sensor", "Cabinet P3", "Plant Industrial", 2, 2, 4, 95.00)],
-    "Renewables": [("REN-GBX-OIL", "Gearbox oil, synthetic ISO VG 320, 20 L", "Shelf W1", "Prairie Wind Services", 3, 2, 4, 210.00),
-                   ("REN-BRK-PAD", "Yaw brake pad set", "Shelf W2", "Prairie Wind Services", 2, 2, 4, 340.00),
-                   ("REN-SLIP-RING", "Slip ring brush set", "Shelf W2", "Prairie Wind Services", 5, 2, 4, 78.00)],
     "HVAC & Boilers": [("HVC-FLT-20X25", "Pleated air filter 20x25x4", "Rack H1", "Climate Supply", 24, 12, 24, 14.00),
                        ("HVC-BELT-B68", "V-belt B68", "Rack H1", "Climate Supply", 4, 2, 4, 16.50),
                        ("HVC-IGN-ELEC", "Boiler ignition electrode", "Cabinet H2", "Climate Supply", 1, 2, 4, 42.00)],
@@ -3088,9 +3055,6 @@ SAMPLE_PARTS = {
     "Forklifts": [("FRK-MAST-CHAIN", "Mast lift chain, per metre", "Rack F1", "Lift Truck Parts", 10, 4, 10, 34.00),
                   ("FRK-PNEU-TIRE", "Solid cushion tire, 21x7x15", "Yard F2", "Lift Truck Parts", 2, 2, 4, 150.00),
                   ("FRK-FORK-PIN", "Fork positioner pin set", "Bin F3", "Lift Truck Parts", 5, 2, 4, 28.00)],
-    "Construction": [("CON-BKT-CUT", "Bucket cutting edge", "Rack K1", "Prairie Equipment Parts", 3, 2, 4, 240.00),
-                     ("CON-HYD-OIL", "Hydraulic oil AW46, 20 L pail", "Shelf K2", "Prairie Equipment Parts", 6, 3, 6, 88.00),
-                     ("CON-AIR-FLT", "Engine air filter, primary", "Shelf K2", "Prairie Equipment Parts", 4, 2, 4, 52.00)],
     "Agriculture": [("AGR-KNIFE-SEC", "Sickle section, combine header", "Shed G1", "Farm Parts Direct", 40, 20, 40, 3.20),
                     ("AGR-CHAIN-RC", "Roller chain #60, 10 ft", "Shed G1", "Farm Parts Direct", 5, 3, 6, 38.00),
                     ("AGR-TINE-BALE", "Baler pickup tine", "Shed G2", "Farm Parts Direct", 30, 20, 40, 2.10)],
