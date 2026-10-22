@@ -812,7 +812,7 @@ def get_default_checklist_df(category):
 
 DEFAULT_LABOR_RATE = 85.0   # $/hr, used until it is changed under Settings
 DEFAULT_BACKUP_KEEP = 60    # newest backups to keep, until changed under Settings
-APP_VERSION = "1.0.4"
+APP_VERSION = "1.0.5"
 
 def get_setting(key, default=""):
     """Read one value from App_Settings. Never raises; returns default when missing or unreadable."""
@@ -4914,6 +4914,10 @@ elif view_mode == "Checklists":
         with n4: 
             st.button("⏭", key="n_l", type="primary", use_container_width=True, on_click=_chk_step, args=("last",))
 
+    if copy_chk_clicked and selected_aid:
+        new_id = duplicate_asset(selected_aid)
+        if new_id: st.success(f"Asset successfully cloned! New ID: {new_id}"); time.sleep(1.5); st.rerun()
+
     chk_is_default = False
     try: checklist_df = pd.DataFrame(json.loads(json_data_str))
     except:
@@ -4978,10 +4982,6 @@ elif view_mode == "Checklists":
                                    help="One page per unit.")
     except ImportError:
         st.error("ReportLab not installed. Run: python -m pip install reportlab")
-
-    if copy_chk_clicked and selected_aid:
-        new_id = duplicate_asset(selected_aid)
-        if new_id: st.success(f"Asset successfully cloned! New ID: {new_id}"); time.sleep(1.5); st.rerun()
 
     if save_chk_clicked:
       with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
