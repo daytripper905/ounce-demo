@@ -15,9 +15,9 @@ import hmac
 import re
 import sqlite3 as _sqlite3_real
 
-LICENSE_READ_ONLY = False   # True while an expired license is in force (see _refresh_license)
+LICENSE_READ_ONLY = False   # True while an expired licence is in force (see _refresh_license)
 # ---- DEMO BUILD (free trial copy) ----
-DEMO_BUILD = True            # this file is the downloadable demo; a valid license code turns it into the full program
+DEMO_BUILD = True            # this file is the downloadable demo; a valid licence code turns it into the full program
 DEMO_DAYS = 30               # days from first run
 DEMO_MAX_ASSETS = 8          # units of the user's own (adding, importing, copying, OR editing/renaming a sample unit); the untouched sample data does not count
 DEMO_MAX_GROUPS = 5          # asset groups of the user's own (new groups, or a renamed sample group)
@@ -32,10 +32,10 @@ def _readonly_stop(exc):
         return
     if LICENSE_READ_ONLY and DEMO.get("expired"):
         msg = (f"The {DEMO_DAYS}-day demo has ended, so changes can't be saved. Your data is safe and is kept. "
-               f"Buy a license at {DEMO_URL} and paste the code under **Users & Security**; everything you entered carries over.")
+               f"Buy a licence at {DEMO_URL} and paste the code under **Users & Security**; everything you entered carries over.")
     elif LICENSE_READ_ONLY:
-        msg = ("This license has expired, so changes can't be saved. Your data is safe. "
-               "Enter a renewed license code under **Users & Security**.")
+        msg = ("This licence has expired, so changes can't be saved. Your data is safe. "
+               "Enter a renewed licence code under **Users & Security**.")
     else:
         msg = "This account is read-only, so changes can't be saved."
     st.error(msg)
@@ -85,7 +85,7 @@ class _GuardedConnection(_sqlite3_real.Connection):
 
 class _SqliteProxy:
     """Stands in for the sqlite3 module. Identical, except that connections opened while a
-    read-only ('viewer') account is signed in, or while the license has expired, refuse every write
+    read-only ('viewer') account is signed in, or while the licence has expired, refuse every write
     (and say so politely instead of showing a database error)."""
     def __getattr__(self, name):
         return getattr(_sqlite3_real, name)
@@ -296,7 +296,7 @@ def _config_value(key):
     return ""
 
 # Name printed at the bottom of every PDF. Set "licensed_to" in ounce_config.json
-# (or the OUNCE_LICENSED_TO environment variable) when a license is issued.
+# (or the OUNCE_LICENSED_TO environment variable) when a licence is issued.
 LICENSED_TO = os.environ.get("OUNCE_LICENSED_TO", "").strip() or _config_value("licensed_to") or "Evaluation copy - not licensed"
 
 def draw_licensee_line(canvas):
@@ -812,7 +812,7 @@ def get_default_checklist_df(category):
 
 DEFAULT_LABOR_RATE = 85.0   # $/hr, used until it is changed under Settings
 DEFAULT_BACKUP_KEEP = 60    # newest backups to keep, until changed under Settings
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.4"
 
 def get_setting(key, default=""):
     """Read one value from App_Settings. Never raises; returns default when missing or unreadable."""
@@ -844,7 +844,7 @@ def get_backup_keep():
 
 def get_company_name():
     """Company name for printouts and new work orders: the Settings value, else the licensee, else blank."""
-    # A licensed copy always uses the name on the license (the name the customer gave when they bought it); it cannot be changed here.
+    # A licensed copy always uses the name on the licence (the name the customer gave when they bought it); it cannot be changed here.
     if LICENSE_INFO.get("state") in ("valid", "expired") and str(LICENSE_INFO.get("licensee", "") or "").strip():
         return str(LICENSE_INFO.get("licensee", "")).strip()
     return str(get_setting("company_name", "") or "").strip()
@@ -1576,13 +1576,13 @@ def save_bom_tables(conn, asset_id, attr_df, parts_df, comp_df):
     if comp_df is not None: _sync_asset_table(conn, "Asset_Components", "ComponentID", ["ComponentName", "PartNumber", "ConditionStatus", "Notes"], asset_id, comp_df)
 
 # ---------------- Start fresh / reset / restore ----------------
-DATA_KEEP_TABLES = ("Users", "App_Settings", "Glossary")   # never cleared or replaced: logins, license, settings, reference glossary
+DATA_KEEP_TABLES = ("Users", "App_Settings", "Glossary")   # never cleared or replaced: logins, licence, settings, reference glossary
 
 def _data_tables(conn):
     return [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'") if r[0] not in DATA_KEEP_TABLES]
 
 def reset_data(mode):
-    """Clear all equipment, tasks, parts, work orders and history (users, license and settings are kept).
+    """Clear all equipment, tasks, parts, work orders and history (users, licence and settings are kept).
     mode 'empty' leaves a blank program; 'sample' then loads the built-in sample data. A full backup is made first.
     Returns (ok, message)."""
     if mode not in ("empty", "sample"): return False, "Unknown action."
@@ -1604,7 +1604,7 @@ def reset_data(mode):
 
 def restore_backup_data(filename):
     """Put the equipment, tasks, parts, work orders and history back the way they were in a saved backup.
-    Users, license and settings are kept as they are now. A safety backup of the current data is made first.
+    Users, licence and settings are kept as they are now. A safety backup of the current data is made first.
     Returns (ok, message)."""
     if filename not in list_backups(): return False, "That backup is not in the list."
     path = os.path.join(get_backup_dir(), filename)
@@ -3345,7 +3345,7 @@ def require_login():
 # ==========================================
 # LICENSE CODES (offline, signed with Ed25519)
 # ==========================================
-# The vendor tool make_license.py signs each license with a PRIVATE key that never leaves the vendor.
+# The vendor tool make_license.py signs each licence with a PRIVATE key that never leaves the vendor.
 # This app holds only the matching PUBLIC key, so it can check a code but cannot create one.
 LICENSE_PUBLIC_KEY_HEX = ""   # set by: python make_license.py init --app app.py
 LICENSE_PREFIX = "OOP1-"
@@ -3412,40 +3412,40 @@ def _b64u_decode(text):
     return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
 
 def parse_license(code, public_key_hex=None, today=None):
-    """Check one license code. Returns a dict:
+    """Check one licence code. Returns a dict:
        state: 'valid' | 'expired' | 'invalid' | 'unconfigured'
        plus licensee, edition, sites, issued, expires, id, message."""
     pub_hex = LICENSE_PUBLIC_KEY_HEX if public_key_hex is None else public_key_hex
     out = {"state": "invalid", "licensee": "", "edition": "", "sites": 0, "issued": "", "expires": "", "id": "", "message": ""}
     code = "".join((code or "").split())            # tolerate line breaks and spaces from copy and paste
     if not pub_hex:
-        out.update(state="unconfigured", message="License checking is not set up in this copy.")
+        out.update(state="unconfigured", message="Licence checking is not set up in this copy.")
         return out
     try:
         if not code.startswith(LICENSE_PREFIX) or "." not in code:
-            raise ValueError("That does not look like a license code.")
+            raise ValueError("That does not look like a licence code.")
         body, sig = code[len(LICENSE_PREFIX):].split(".", 1)
         payload, signature = _b64u_decode(body), _b64u_decode(sig)
         if not ed25519_verify(bytes.fromhex(pub_hex), payload, signature):
-            raise ValueError("The license code is not valid (signature check failed).")
+            raise ValueError("The licence code is not valid (signature check failed).")
         data = json.loads(payload.decode("utf-8"))
-        if data.get("v") != 1: raise ValueError("Unsupported license version.")
+        if data.get("v") != 1: raise ValueError("Unsupported licence version.")
         out.update(licensee=str(data.get("licensee", "")).strip(), edition=str(data.get("edition", "")),
                    sites=int(data.get("sites", 1) or 1), issued=str(data.get("issued", "")),
                    expires=str(data.get("expires") or ""), id=str(data.get("id", "")))
-        if not out["licensee"]: raise ValueError("The license has no licensee name.")
+        if not out["licensee"]: raise ValueError("The licence has no licensee name.")
         out["state"] = "valid"
         if out["expires"]:
             today = today or _date.today()
             if today > _date.fromisoformat(out["expires"]):
                 out["state"] = "expired"
-                out["message"] = f"This license expired on {out['expires']}."
+                out["message"] = f"This licence expired on {out['expires']}."
     except Exception as e:
-        out.update(state="invalid", message=str(e) if isinstance(e, ValueError) else "The license code could not be read.")
+        out.update(state="invalid", message=str(e) if isinstance(e, ValueError) else "The licence code could not be read.")
     return out
 
 def _license_candidates():
-    """Where a license code may be stored, in priority order."""
+    """Where a licence code may be stored, in priority order."""
     cands = []
     env_val = os.environ.get("OUNCE_LICENSE", "").strip()
     if env_val: cands.append(("environment", env_val))
@@ -3467,7 +3467,7 @@ def _license_candidates():
 
 def effective_today():
     """Today's date, but never earlier than the latest date this database has seen, so winding the
-    computer's clock back does not revive an expired license."""
+    computer's clock back does not revive an expired licence."""
     today = _date.today()
     try:
         with _auth_conn() as conn:
@@ -3482,7 +3482,7 @@ def effective_today():
     return today
 
 def load_license():
-    """Pick the license this copy runs under. A code that checks out wins; otherwise the first code found is reported as invalid."""
+    """Pick the licence this copy runs under. A code that checks out wins; otherwise the first code found is reported as invalid."""
     cands = _license_candidates()
     today = effective_today()
     first_bad = None
@@ -3503,15 +3503,15 @@ def save_license_code(code):
         conn.commit()
     name = info["licensee"]
     if info["state"] == "expired":
-        text = f"Code accepted for {name}, but the license expired on {info['expires']}."
+        text = f"Code accepted for {name}, but the licence expired on {info['expires']}."
         return True, text.replace("..", ".")
-    text = f"License activated for {name}."
+    text = f"Licence activated for {name}."
     return True, text.replace("..", ".")
 
 def license_display(info):
     """Text for the 'Licensed to:' line on screens and printouts."""
     if info["state"] == "valid": return info["licensee"]
-    if info["state"] == "expired": return f"{info['licensee']} (license expired {info['expires']})"
+    if info["state"] == "expired": return f"{info['licensee']} (licence expired {info['expires']})"
     manual = _config_value("licensed_to") or os.environ.get("OUNCE_LICENSED_TO", "").strip()
     if manual: return f"{manual} (unverified)"
     return "Evaluation copy - not licensed"
@@ -3616,10 +3616,10 @@ def demo_cap_message(n_new=1, new_groups=0):
     if used + n_new > DEMO_MAX_ASSETS:
         return (f"The demo allows {DEMO_MAX_ASSETS} assets of your own (you have {used}; room for {max(DEMO_MAX_ASSETS - used, 0)} more). "
                 f"Editing, renaming or copying a sample unit counts as one of yours; the untouched sample data does not. "
-                f"A license from {DEMO_URL} removes the limits and keeps everything you've entered.")
+                f"A licence from {DEMO_URL} removes the limits and keeps everything you've entered.")
     if gused + new_groups > DEMO_MAX_GROUPS:
         return (f"The demo allows {DEMO_MAX_GROUPS} asset groups of your own (you have {gused}). "
-                f"A license from {DEMO_URL} removes the limits and keeps everything you've entered.")
+                f"A licence from {DEMO_URL} removes the limits and keeps everything you've entered.")
     return ""
 
 def demo_cap_gate(n_new=1, new_groups=0):
@@ -3631,9 +3631,9 @@ def demo_cap_gate(n_new=1, new_groups=0):
 
 
 def render_license_panel():
-    """License status and activation box (shown on the Users & Security page)."""
+    """Licence status and activation box (shown on the Users & Security page)."""
     info = LICENSE_INFO
-    st.markdown("#### License")
+    st.markdown("#### Licence")
     flash = st.session_state.pop("license_flash", None)
     if flash: (st.success if flash[0] == "ok" else st.error)(flash[1])
     if info["state"] in ("valid", "expired"):
@@ -3642,19 +3642,19 @@ def render_license_panel():
             + (f"expires {info['expires']}" if info["expires"] else "perpetual") + f"  |  ID {info['id']}"
             + (f"  |  {info['message']}" if info["state"] == "expired" else ""))
     elif info["state"] == "invalid":
-        st.error(f"A license code was found ({info['source']}) but it was not accepted: {info['message']}")
+        st.error(f"A licence code was found ({info['source']}) but it was not accepted: {info['message']}")
     elif DEMO.get("active"):
         st.info(f"**DEMO copy.** {DEMO['days_left']} day(s) left (ends {DEMO['end']}). Up to {DEMO_MAX_ASSETS} assets and {DEMO_MAX_GROUPS} asset groups of your own. "
-                f"Bought a license at {DEMO_URL}? Paste the code below: the limits go away and all your data stays.")
+                f"Bought a licence at {DEMO_URL}? Paste the code below: the limits go away and all your data stays.")
     elif DEMO.get("expired"):
         st.warning(f"The {DEMO_DAYS}-day demo ended on {DEMO['end']}. Your data is safe: you can still view, print and back up. "
-                   f"Get a license at {DEMO_URL} and paste the code below to carry on with everything you entered.")
+                   f"Get a licence at {DEMO_URL} and paste the code below to carry on with everything you entered.")
     else:
-        st.info("This copy is running as an evaluation copy. Paste your license code below to activate it.")
+        st.info("This copy is running as an evaluation copy. Paste your licence code below to activate it.")
     if not LICENSE_PUBLIC_KEY_HEX:
-        st.caption("License checking is not set up in this copy (no public key installed).")
-    _code = st.text_area("Paste license code", key="license_code_input", height=110)
-    if st.button("Activate License", key="btn_activate_license"):
+        st.caption("Licence checking is not set up in this copy (no public key installed).")
+    _code = st.text_area("Paste licence code", key="license_code_input", height=110)
+    if st.button("Activate Licence", key="btn_activate_license"):
         _ok, _msg = save_license_code(_code)
         st.session_state["license_flash"] = ("ok" if _ok else "err", _msg)
         st.rerun()
@@ -3766,14 +3766,14 @@ if DEMO.get("active"):
     st.markdown("<div class='demo-mark'>DEMO</div>", unsafe_allow_html=True)
     st.info(f"**DEMO copy** - {DEMO['days_left']} day(s) left (ends {DEMO['end']}). The sample data is for exploring; "
             f"you can have up to {DEMO_MAX_ASSETS} assets and {DEMO_MAX_GROUPS} asset groups of your own ({demo_assets_used()} and {demo_groups_used()} used). "
-            f"A license from {DEMO_URL} removes the limits and keeps your data.")
+            f"A licence from {DEMO_URL} removes the limits and keeps your data.")
 elif DEMO.get("expired"):
     st.markdown("<div class='demo-mark'>DEMO</div>", unsafe_allow_html=True)
     st.warning(f"**The {DEMO_DAYS}-day demo has ended.** The app is now **read-only**: your data is safe and you can still view, print and back up. "
-               f"To carry on, get a license at {DEMO_URL} and paste the code under **Users & Security**; everything you entered stays.")
+               f"To carry on, get a licence at {DEMO_URL} and paste the code under **Users & Security**; everything you entered stays.")
 elif LICENSE_READ_ONLY:
     st.warning(f"{LICENSE_INFO['message']} The app is now **read-only**: your data is safe and you can still view, print and back up, "
-               "but changes are not saved. Enter a renewed license code under **Users & Security**.")
+               "but changes are not saved. Enter a renewed licence code under **Users & Security**.")
 
 # --- SIDEBAR ROUTING & LOGIC ---
 if "view_mode_override" not in st.session_state: 
@@ -4200,8 +4200,8 @@ elif view_mode == "Settings":
   with st.form("settings_form"):
     _locked = LICENSE_INFO.get("state") in ("valid", "expired") and bool(str(LICENSE_INFO.get("licensee", "") or "").strip())
     if _locked:
-        _co = st.text_input("Company name (set by your license; printed on every printout and new work order)", value=get_company_name(), disabled=True)
-        st.caption("This is the name your license was issued to. To change it, contact BioShip Inc. for a corrected license.")
+        _co = st.text_input("Company name (set by your licence; printed on every printout and new work order)", value=get_company_name(), disabled=True)
+        st.caption("This is the name your licence was issued to. To change it, contact BioShip Inc. for a corrected licence.")
     else:
         _co = st.text_input("Company name (printed at the top of every printout and used on new work orders)", value=str(get_setting("company_name", "")))
     _lr = st.number_input("Labor rate ($ per hour)", min_value=0.0, max_value=100000.0, value=float(get_labor_rate()), step=1.0, format="%.2f")
@@ -4229,7 +4229,7 @@ elif view_mode == "Settings":
 
   st.markdown("---")
   st.markdown("#### Data: start fresh, reset, or restore")
-  st.caption("Every action here saves a full backup first. Your users, passwords, license code and settings are always kept.")
+  st.caption("Every action here saves a full backup first. Your users, passwords, licence code and settings are always kept.")
   _fl = st.session_state.pop("data_flash", None)
   if _fl: (st.success if _fl[0] else st.error)(_fl[1])
   _data_actions = {"Start fresh (empty)": "empty", "Reset to sample data": "sample", "Restore a backup": "restore"}
@@ -4863,12 +4863,21 @@ elif view_mode == "Checklists":
   with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
     assets_in_cat = pd.read_sql('SELECT AssetID, Year_Make_Model, Current_Meter, Checklist_Data_V2 FROM "Trucks" WHERE Category = ?', conn, params=(selected_category,))
   
-  h_col, b1, b2, b3 = st.columns([2.5, 0.8, 1.0, 0.8])
+  h_col, _btn_area = st.columns([2.0, 4.6])
   with h_col: st.markdown(f"### Inspection Checklist: {selected_category}")
-  with b1: copy_chk_clicked = st.button("Copy Record", key="btn_copy_chk", use_container_width=True)
-  with b2: save_chk_clicked = st.button("Save", key="btn_save_chk", use_container_width=True)
-  with b3: 
+  with _btn_area:
+    # Six buttons at the top, three columns of two: Save / Copy Record / Switchboard, and the three Print buttons underneath.
+    # The Print buttons are filled in further down (the PDF needs the checklist as edited), but they appear here.
+    b1, b2, b3 = st.columns(3)
+    with b1:
+      save_chk_clicked = st.button("Save", key="btn_save_chk", use_container_width=True)
+      print_slot_group = st.container()
+    with b2:
+      copy_chk_clicked = st.button("Copy Record", key="btn_copy_chk", use_container_width=True)
+      print_slot_unit = st.container()
+    with b3:
       if st.button("Switchboard", key="btn_sw_chk", use_container_width=True): st.session_state.view_mode_override = "Switchboard"; st.rerun()
+      print_slot_all = st.container()
 
   if not assets_in_cat.empty:
     asset_options = assets_in_cat.apply(lambda r: f"{r['AssetID']} — {r['Year_Make_Model']}", axis=1).tolist()
@@ -4904,10 +4913,6 @@ elif view_mode == "Checklists":
             st.button("▶", key="n_n", type="primary", use_container_width=True, on_click=_chk_step, args=("next",))
         with n4: 
             st.button("⏭", key="n_l", type="primary", use_container_width=True, on_click=_chk_step, args=("last",))
-
-    if copy_chk_clicked and selected_aid:
-        new_id = duplicate_asset(selected_aid)
-        if new_id: st.success(f"Asset successfully cloned! New ID: {new_id}"); time.sleep(1.5); st.rerun()
 
     chk_is_default = False
     try: checklist_df = pd.DataFrame(json.loads(json_data_str))
@@ -4956,24 +4961,27 @@ elif view_mode == "Checklists":
             except Exception: adf = get_default_checklist_df(selected_category)
             all_units.append({"AssetID": ar["AssetID"], "Model": ar["Year_Make_Model"],
                               "Meter": int(ar["Current_Meter"]) if pd.notnull(ar["Current_Meter"]) else 0, "df": adf})
-        pc1, pc2, pc3, _pc4 = st.columns([1.35, 1.1, 1.1, 1.6])
-        with pc1:   # the main printout: one sheet for the whole asset group
-            st.download_button("🖨️ Print Group Sheet (PDF)", data=build_group_checklist_pdf(selected_category, all_units),
+        with print_slot_group:   # the main printout: one sheet for the whole asset group
+            st.download_button("🖨️ Print Group Sheet", data=build_group_checklist_pdf(selected_category, all_units),
                                file_name=f"GroupChecklist_{selected_category.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf",
-                               mime="application/pdf", use_container_width=True,
-                               help="The daily checklist for the whole asset group on one sheet: items down the side, units across the top.")
-        with pc2:
-            st.download_button("Print This Unit (PDF)", data=build_checklist_pdf(selected_category, this_unit),
+                               mime="application/pdf", use_container_width=True, key="dl_group_sheet_top",
+                               help="PDF of the daily checklist for the whole asset group on one sheet: items down the side, units across the top.")
+        with print_slot_unit:
+            st.download_button("🖨️ Print This Unit", data=build_checklist_pdf(selected_category, this_unit),
                                file_name=f"Checklist_{selected_aid}_{datetime.now().strftime('%Y%m%d')}.pdf",
                                mime="application/pdf", use_container_width=True)
         if len(all_units) > 1:
-            with pc3:
-                st.download_button("Print All Units (PDF)", data=build_checklist_pdf(selected_category, all_units),
+            with print_slot_all:
+                st.download_button("🖨️ Print All Units", data=build_checklist_pdf(selected_category, all_units),
                                    file_name=f"Checklists_{selected_category.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf",
                                    mime="application/pdf", use_container_width=True,
                                    help="One page per unit.")
     except ImportError:
         st.error("ReportLab not installed. Run: python -m pip install reportlab")
+
+    if copy_chk_clicked and selected_aid:
+        new_id = duplicate_asset(selected_aid)
+        if new_id: st.success(f"Asset successfully cloned! New ID: {new_id}"); time.sleep(1.5); st.rerun()
 
     if save_chk_clicked:
       with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
@@ -5969,11 +5977,22 @@ elif view_mode == "Asset Groups":
   st.markdown("*(Select any specific asset record across the database to edit its specifications or delete it permanently)*")
   
   with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
-    all_units_df = pd.read_sql('SELECT AssetID, Year_Make_Model, SerialNumber, Color, Motor, Transmission, Fuel, Maintenance_Protocol FROM "Trucks" ORDER BY AssetID', conn)
+    all_units_df = pd.read_sql('SELECT AssetID, Year_Make_Model, SerialNumber, Color, Motor, Transmission, Fuel, Maintenance_Protocol, Category FROM "Trucks" ORDER BY AssetID', conn)
   
   if not all_units_df.empty:
     unit_opts = all_units_df.apply(lambda r: f"{r['AssetID']} — {r['Year_Make_Model']}", axis=1).tolist()
     st.markdown("<style>[class*='st-key-mod_'] [data-testid='stWidgetLabel'] p {font-size: 0.95rem !important;}</style>", unsafe_allow_html=True)
+    # Start on the first asset of the currently selected group (and again whenever that group changes)
+    if st.session_state.get("sel_unit_to_mod") not in unit_opts:
+      st.session_state.pop("sel_unit_to_mod", None)
+      st.session_state.pop("_mod_grp_seen", None)
+    _act_grp = st.session_state.get("active_asset_group")
+    if st.session_state.get("_mod_grp_seen") != _act_grp:
+      st.session_state["_mod_grp_seen"] = _act_grp
+      _grp_units = all_units_df[all_units_df["Category"] == _act_grp]
+      if not _grp_units.empty:
+        _r0 = _grp_units.iloc[0]
+        st.session_state["sel_unit_to_mod"] = f"{_r0['AssetID']} — {_r0['Year_Make_Model']}"
     _top_l, _top_r = st.columns([3.0, 1.5], gap="medium")
     with _top_l:
       st.markdown("**Select Asset to Modify or Delete:**")

@@ -111,8 +111,8 @@ TO START
 Your data is stored in the file OunceOfPrevention.db in this folder. Copy this whole folder to keep it safe or move it.
 
 TO KEEP USING IT
-Buy a license at www.bioship.ca. You will get a license code by email.
-In the program open "Users & Security", paste the code under License, and click Activate License.
+Buy a licence at www.bioship.ca. You will get a licence code by email.
+In the program open "Users & Security", paste the code under Licence, and click Activate Licence.
 The limits go away and everything you entered stays.
 
 Questions: support@bioship.ca     (c) BioShip Inc.   www.bioship.ca
