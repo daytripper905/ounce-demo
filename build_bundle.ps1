@@ -96,7 +96,7 @@ if ($Demo) {
 An Ounce of Prevention - FREE DEMO
 ==================================
 This is a working copy of the real program. It runs for 30 days from the first time you start it,
-comes with sample data to explore, and lets you add up to 10 assets of your own.
+comes with sample data to explore, and lets you add up to 8 assets and 5 asset groups of your own.
 Your sample data and anything you enter is kept. After 30 days the demo becomes read-only:
 you can still look, print and back up - nothing is deleted.
 

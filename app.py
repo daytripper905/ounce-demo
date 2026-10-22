@@ -19,7 +19,8 @@ LICENSE_READ_ONLY = False   # True while an expired license is in force (see _re
 # ---- DEMO BUILD (free trial copy) ----
 DEMO_BUILD = True            # this file is the downloadable demo; a valid license code turns it into the full program
 DEMO_DAYS = 30               # days from first run
-DEMO_MAX_ASSETS = 10         # assets/groups the user may add; the built-in sample data does not count
+DEMO_MAX_ASSETS = 8          # units of the user's own (adding, importing, copying, OR editing/renaming a sample unit); the untouched sample data does not count
+DEMO_MAX_GROUPS = 5          # asset groups of the user's own (new groups, or a renamed sample group)
 DEMO_URL = "www.bioship.ca"
 DEMO = {"active": False, "expired": False, "days_left": 0, "start": "", "end": ""}
 LICENSE_INFO = {"state": "none", "licensee": "", "edition": "", "sites": 0, "issued": "", "expires": "", "id": "", "message": "", "source": ""}
@@ -315,12 +316,13 @@ def draw_licensee_line(canvas):
         canvas.saveState()
         try:
             w, h = canvas._pagesize
-            canvas.setFillGray(0.88)
+            canvas.setFillColorRGB(0.5, 0.5, 0.5)
+            canvas.setFillAlpha(0.13)      # see-through, so the text under it stays readable
             canvas.setFont("Helvetica-Bold", 110)
             canvas.translate(w / 2, h / 2); canvas.rotate(45)
             canvas.drawCentredString(0, -30, "DEMO")
             canvas.rotate(-45); canvas.translate(-w / 2, -h / 2)
-            canvas.setFillGray(0.35); canvas.setFont("Helvetica-Bold", 8)
+            canvas.setFillAlpha(1.0); canvas.setFillGray(0.35); canvas.setFont("Helvetica-Bold", 8)
             canvas.drawRightString(w - 30, 16, f"DEMO COPY - {DEMO_URL}")
         finally:
             canvas.restoreState()
@@ -385,18 +387,42 @@ PROTOCOL_DETAILS = {
 SAMPLE_GROUPS = {
     'Vehicles': dict(
         prefix='TRK',
-        model='Fleet Truck T-{i} (Class 8 Tractor)',
+        model='Fleet Truck T-{i} (5-Ton Cargo)',
         labels=('Gross Vehicle Weight (kg)', 'Engine (L / HP)', 'Axle Configuration', 'Fuel Type', 'Plate Number'),
         parts=('Engine & Cooling:', 'Transmission & Driveline:', 'Brakes (Air/Hydraulic):', 'Suspension & Steering:', 'Electrical & Lighting:', 'Cab & Safety Equipment:'),
-        attrs=[('Engine', '13 L diesel, 450 HP', 'Emissions equipped'), ('Axles', '6x4 tandem drive', 'Air ride suspension'), ('Fifth wheel', 'Sliding, 2 in. kingpin', 'Greased at every PM')],
-        checklist=[('Check engine oil level & clarity', 'Inspect tire pressure & tread depth'), ('Verify air brake reservoir drain', 'Test lights, signals & horn'), ('Check coolant level & hoses', 'Inspect belts for cracks or wear'), ('Check fluid leaks under the vehicle', 'Verify wipers, mirrors & windshield'), ('Check fifth wheel & coupling condition', 'Confirm fire extinguisher & triangles on board')],
+        attrs=[('Engine', '6.7 L diesel, 240 HP', 'Emissions equipped'), ('Axles', '4x2, dual rear wheels', 'Rated payload about 5 tons'), ('Brakes', 'Air brakes', 'Drain the tanks every day')],
+        # Pre-trip checklist for a 5-ton truck on a long trip. Two items per row; "|Monday" makes an item weekly.
+        checklist=[
+            ('Engine oil level & condition', 'Coolant level, hoses & radiator'),
+            ('Brake fluid & power steering fluid levels', 'Fuel level (fill at half a tank), no leaks or water in separator'),
+            ('Tires: cold pressure, tread, sidewalls & lug nuts (all positions, duals)', 'Spare tire, jack & wheel wrench secured'),
+            ('Air tanks drained; air pressure builds and holds', 'Parking brake holds; service brake pedal firm'),
+            ('Lights: head, brake, turn, hazard, marker, reverse', 'Horn, backup alarm & wipers; washer fluid full'),
+            ('Mirrors, windshield & windows clean and clear', 'Gauges and warning lights normal at start-up'),
+            ('Belts, hoses & battery terminals secure', 'Look under the truck: oil, coolant, fuel or brake fluid leaks'),
+            ('Springs, U-bolts, steering linkage & driveshaft check', 'Exhaust system secure, no leaks or rubbing'),
+            ('Cargo secured: tie-downs, tarps, tailgate & doors latched', 'Load within weight rating (axle and gross weights)'),
+            ('Emergency kit: triangles, flares, first aid, flashlight', 'Fire extinguisher charged and in reach'),
+            ('Documents: licence, registration, insurance, permits & logbook', 'Route plan: fuel and rest stops, weather, road closures'),
+            ('Spare fluids, jumper cables, tow strap & basic tool kit on board', 'Seat belts, seat position & cab free of loose items'),
+            ('Grease chassis, driveshaft & steering fittings|Monday', 'Re-torque wheel lug nuts, dual wheels|Monday'),
+            ('Check air filter restriction gauge|Wednesday', 'Clean battery terminals & check charge|Friday'),
+        ],
         tasks=[
-            ('Prevention A', 'Engine oil & filter change', 90, 10000, 1.5, 'Drain oil, replace oil and fuel filters, check for leaks, reset service interval.', 'Mechanic', 'Hot fluids; wheel chocks', 120.0, 'Oil, filters', 'Drain pan, filter wrench'),
-            ('Prevention A', 'Grease chassis, fifth wheel & steering', 30, 2500, 0.5, 'Grease all chassis fittings, fifth wheel plate and steering linkage.', 'Mechanic', 'None', 10.0, 'Grease', 'Grease gun'),
-            ('Prevention B', 'Brake inspection & slack adjuster check', 180, 25000, 2.5, 'Measure brake lining, check drums or rotors, adjust slack adjusters, test air system leakdown.', 'Mechanic', 'Wheels chocked; air bled', 150.0, 'Brake parts as needed', 'Gauges, jacks'),
-            ('Prevention B', 'Coolant, belts & battery service', 180, 25000, 1.5, 'Test coolant freeze point, inspect belts and hoses, clean battery terminals and load test.', 'Mechanic', 'None', 60.0, 'Coolant', 'Tester'),
-            ('Prevention C', 'Transmission & differential fluid change', 365, 100000, 3.0, 'Drain and refill transmission and axle fluids, inspect for metal in magnetic plugs.', 'Mechanic', 'Hot fluids', 400.0, 'Gear oil, filters', 'Drain pans'),
+            ('Prevention A', 'Engine oil & filter change', 120, 12000, 1.5, 'Drain oil, replace the oil filter, check for leaks, reset the service interval.', 'Mechanic', 'Hot fluids; wheel chocks', 140.0, 'Oil, filter', 'Drain pan, filter wrench'),
+            ('Prevention A', 'Grease chassis, driveshaft & steering', 45, 5000, 0.5, 'Grease all chassis fittings, slip yoke, U-joints and steering linkage.', 'Mechanic', 'None', 12.0, 'Grease', 'Grease gun'),
+            ('Prevention A', 'Tire rotation, pressure & tread inspection', 90, 10000, 1.0, 'Rotate tires per the pattern, set pressures cold, measure tread, check for cuts and bulges.', 'Mechanic', 'Wheels chocked; truck on stands', 0.0, 'None', 'Gauge, torque wrench, jack stands'),
+            ('Prevention A', 'Fuel filter & water separator service', 180, 20000, 1.0, 'Replace fuel filter, drain and clean the water separator, check lines for leaks.', 'Mechanic', 'Fuel; no ignition sources', 65.0, 'Fuel filter', 'Filter wrench'),
+            ('Prevention B', 'Brake inspection, adjustment & air-system leakdown test', 180, 20000, 2.5, 'Measure lining, check drums, adjust slack adjusters, test air system leakdown and parking brake hold.', 'Mechanic', 'Wheels chocked; air bled', 150.0, 'Brake parts as needed', 'Gauges, jacks'),
+            ('Prevention B', 'Suspension, steering & wheel bearing inspection', 180, 25000, 2.0, 'Check springs, shackles, U-bolts, tie rods and kingpins; check wheel bearing play and seals.', 'Mechanic', 'Truck on stands', 80.0, 'Grease, seals as needed', 'Pry bar, dial gauge'),
+            ('Prevention B', 'Air filter inspection & replacement', 180, 20000, 0.5, 'Inspect the air filter and replace it if the restriction gauge shows the limit.', 'Mechanic', 'None', 45.0, 'Air filter', 'Hand tools'),
+            ('Prevention B', 'Long-trip readiness service', 180, 15000, 3.0, 'Before an extended trip: fluids, tires incl. spare, brakes, belts and hoses, lights, battery load test, emergency kit and documents.', 'Mechanic', 'Hot fluids; wheel chocks', 120.0, 'Fluids, bulbs, wipers', 'Battery tester, gauges'),
+            ('Prevention C', 'Coolant, belts, hoses & battery service', 365, 40000, 1.5, 'Test coolant freeze point and condition, replace belts and hoses as needed, clean and load test the batteries.', 'Mechanic', 'Hot coolant', 90.0, 'Coolant', 'Coolant tester, battery tester'),
+            ('Prevention C', 'Transmission fluid & filter service', 365, 60000, 2.0, 'Drain and refill transmission fluid, replace the filter, inspect for metal on the magnetic plug.', 'Mechanic', 'Hot fluids', 260.0, 'Transmission fluid, filter', 'Drain pan'),
+            ('Prevention C', 'Axle & differential fluid change', 365, 60000, 1.5, 'Drain and refill the rear axle, inspect the magnetic plug and breathers.', 'Mechanic', 'Hot fluids', 120.0, 'Gear oil', 'Drain pan'),
+            ('Prevention C', 'Wheel alignment & steering geometry check', 365, 50000, 1.5, 'Check and adjust alignment; inspect tire wear patterns for signs of misalignment.', 'Alignment Technician', 'Truck on alignment rack', 130.0, 'None', 'Alignment rack'),
             ('Compliance', 'Annual commercial vehicle safety inspection', 365, 0, 2.0, 'Complete the annual safety inspection and keep the certificate with the vehicle record.', 'Certified Inspector', 'Inspection pit or hoist rules', 150.0, 'None', 'Inspection checklist'),
+            ('Compliance', 'Annual fire extinguisher service & emergency kit renewal', 365, 0, 0.5, 'Have the extinguisher inspected, replace expired first-aid items, flares and batteries in the kit.', 'Certified Inspector', 'None', 70.0, 'First-aid items, flares', 'Inspection tag'),
         ]),
     'Mining': dict(
         prefix='MINE',
@@ -981,7 +1007,10 @@ def validate_task_rows(df, asset_meters, existing_keys):
 
 def import_asset_rows(rows):
     """Write validated asset rows in one transaction. Returns how many were added."""
-    demo_cap_gate(len(rows))
+    if DEMO_BUILD and DEMO.get("active"):
+        _fp0, _cats0 = _demo_sample_reference()
+        _have = {r[2] for r in _demo_rows()}
+        demo_cap_gate(len(rows), len({r["Category"] for r in rows if r["Category"] not in _have and r["Category"] not in _cats0}))
     chk = json.dumps([{"ChK1": False, "ItemLabel1": "[ N/A ]", "ChK2": False, "ItemLabel2": "[ N/A ]"}] * 5)
     data = [(r["AssetID"], r["Description"], r["SerialNumber"], r["Color"], r["Motor"], r["Transmission"], r["Fuel"], r["Category"],
              r["Maintenance_Protocol"], r["Current_Meter"], 0, chk) for r in rows]
@@ -2980,7 +3009,7 @@ SAMPLE_PARTS = {
                    ("GEN-GREASE-EP2", "EP2 grease cartridge, 400 g", "Shelf A2", "Northern Lubricants", 24, 12, 24, 5.25),
                    ("GEN-FAST-KIT", "Assorted nuts, bolts & washers kit", "Bin B1", "Prairie Fastener", 3, 2, 4, 64.00),
                    ("GEN-RAGS-BOX", "Shop rags, 10 lb box", "Shelf A4", "Prairie Fastener", 2, 2, 6, 18.50)],
-    "Vehicles": [("VEH-OF-1042", "Engine oil filter, Class 8", "Shelf C1", "Fleet Parts Depot", 10, 4, 10, 18.75),
+    "Vehicles": [("VEH-OF-1042", "Engine oil filter, 6.7 L diesel", "Shelf C1", "Fleet Parts Depot", 10, 4, 10, 18.75),
                  ("VEH-FF-2210", "Fuel filter / water separator", "Shelf C1", "Fleet Parts Depot", 3, 4, 8, 32.40),
                  ("VEH-BRK-5530", "Brake lining set, drive axle", "Rack C3", "Fleet Parts Depot", 2, 1, 2, 210.00)],
     "Mining": [("MIN-BKT-TOOTH", "Bucket tooth, heavy duty", "Rack D1", "Western Wear Parts", 12, 6, 12, 85.00),
@@ -3520,28 +3549,82 @@ def _refresh_license():
             LICENSE_READ_ONLY = True
             LICENSED_TO = "DEMO copy - ended"
 
-def demo_assets_used():
-    """Assets/groups the user added themselves (the built-in sample data is not counted)."""
+def _demo_fp(ymm, cat, sn):
+    return hashlib.sha1(f"{ymm}|{cat}|{sn}".encode("utf-8")).hexdigest()[:12]
+
+def demo_record_sample_fingerprints(cursor):
+    """Called once, right after the sample data is first loaded: remember what each sample unit looks like,
+    so that editing, renaming or re-creating one is recognised as 'your own' asset."""
+    rows = cursor.execute('SELECT "AssetID", "Year_Make_Model", "Category", "SerialNumber" FROM "Trucks"').fetchall()
+    fp = {r[0]: _demo_fp(r[1], r[2], r[3]) for r in rows}
+    cats = sorted({r[2] for r in rows if r[2]})
+    cursor.execute('INSERT OR REPLACE INTO "App_Settings" ("Key", "Value") VALUES (?, ?)', ("demo_sample_fp", json.dumps(fp)))
+    cursor.execute('INSERT OR REPLACE INTO "App_Settings" ("Key", "Value") VALUES (?, ?)', ("demo_sample_cats", json.dumps(cats)))
+
+def _demo_sample_reference():
+    try: fp = json.loads(get_setting("demo_sample_fp", "") or "{}")
+    except Exception: fp = {}
+    try: cats = set(json.loads(get_setting("demo_sample_cats", "") or "[]"))
+    except Exception: cats = set()
+    if not fp:       # older database without fingerprints: fall back to the sample ID list
+        fp = None
+        cats = set(SAMPLE_CAT_PREFIXES.keys())
+    return fp, cats
+
+def _demo_rows():
+    with _sqlite3_real.connect(DB_PATH, timeout=10.0) as conn:
+        return conn.execute('SELECT "AssetID", "Year_Make_Model", "Category", "SerialNumber" FROM "Trucks"').fetchall()
+
+def _demo_is_pristine(row, fp):
+    if fp is None: return row[0] in set(sample_asset_ids())
+    return fp.get(row[0]) == _demo_fp(row[1], row[2], row[3])
+
+def demo_usage():
+    """(units of your own, asset groups of your own). A sample unit that has been edited or renamed counts as your own."""
     try:
-        samples = set(sample_asset_ids())
-        with _sqlite3_real.connect(DB_PATH, timeout=10.0) as conn:
-            ids = [r[0] for r in conn.execute('SELECT "AssetID" FROM "Trucks"').fetchall()]
-        return len([i for i in ids if i not in samples])
+        fp, cats = _demo_sample_reference()
+        own = [r for r in _demo_rows() if not _demo_is_pristine(r, fp)]
+        groups = {r[2] for r in own if r[2] and r[2] not in cats}
+        return len(own), len(groups)
     except Exception:
-        return 0
+        return 0, 0
 
-def demo_cap_message(n_new=1):
-    """Text to show when adding n_new assets would pass the demo limit, else ''."""
+def demo_assets_used():
+    return demo_usage()[0]
+
+def demo_groups_used():
+    return demo_usage()[1]
+
+def demo_pristine_in_group(group):
+    """How many untouched sample units are in this group (they would become 'yours' if the group were renamed)."""
+    fp, cats = _demo_sample_reference()
+    return len([r for r in _demo_rows() if r[2] == group and _demo_is_pristine(r, fp)])
+
+def demo_would_convert(asset_id, new_ymm=None, new_sn=None):
+    """True if saving these values turns an untouched sample unit into one of your own."""
+    fp, cats = _demo_sample_reference()
+    for r in _demo_rows():
+        if r[0] == asset_id:
+            if not _demo_is_pristine(r, fp): return False
+            return _demo_fp(r[1] if new_ymm is None else new_ymm, r[2], r[3] if new_sn is None else new_sn) != _demo_fp(r[1], r[2], r[3])
+    return False
+
+def demo_cap_message(n_new=1, new_groups=0):
+    """Text to show when this change would pass the demo limits, else ''."""
     if not (DEMO_BUILD and DEMO.get("active")): return ""
-    used = demo_assets_used()
-    if used + n_new <= DEMO_MAX_ASSETS: return ""
-    room = max(DEMO_MAX_ASSETS - used, 0)
-    return (f"The demo allows {DEMO_MAX_ASSETS} assets of your own (you have {used}; room for {room} more). "
-            f"The sample data does not count. A license from {DEMO_URL} removes the limit and keeps everything you've entered.")
+    used, gused = demo_usage()
+    if used + n_new > DEMO_MAX_ASSETS:
+        return (f"The demo allows {DEMO_MAX_ASSETS} assets of your own (you have {used}; room for {max(DEMO_MAX_ASSETS - used, 0)} more). "
+                f"Editing, renaming or copying a sample unit counts as one of yours; the untouched sample data does not. "
+                f"A license from {DEMO_URL} removes the limits and keeps everything you've entered.")
+    if gused + new_groups > DEMO_MAX_GROUPS:
+        return (f"The demo allows {DEMO_MAX_GROUPS} asset groups of your own (you have {gused}). "
+                f"A license from {DEMO_URL} removes the limits and keeps everything you've entered.")
+    return ""
 
-def demo_cap_gate(n_new=1):
-    """Stop the page with a plain message if the demo asset limit would be passed."""
-    _m = demo_cap_message(n_new)
+def demo_cap_gate(n_new=1, new_groups=0):
+    """Stop the page with a plain message if the demo limits would be passed."""
+    _m = demo_cap_message(n_new, new_groups)
     if _m:
         st.error(_m)
         st.stop()
@@ -3561,7 +3644,7 @@ def render_license_panel():
     elif info["state"] == "invalid":
         st.error(f"A license code was found ({info['source']}) but it was not accepted: {info['message']}")
     elif DEMO.get("active"):
-        st.info(f"**DEMO copy.** {DEMO['days_left']} day(s) left (ends {DEMO['end']}). Up to {DEMO_MAX_ASSETS} of your own assets. "
+        st.info(f"**DEMO copy.** {DEMO['days_left']} day(s) left (ends {DEMO['end']}). Up to {DEMO_MAX_ASSETS} assets and {DEMO_MAX_GROUPS} asset groups of your own. "
                 f"Bought a license at {DEMO_URL}? Paste the code below: the limits go away and all your data stays.")
     elif DEMO.get("expired"):
         st.warning(f"The {DEMO_DAYS}-day demo ended on {DEMO['end']}. Your data is safe: you can still view, print and back up. "
@@ -3663,7 +3746,15 @@ def init_db():
     else:
         _mode = _row[0]
     if _mode == "sample":
-        seed_sample_data(cursor)
+        if DEMO_BUILD:
+            # Demo: load the sample data ONCE. (Re-seeding on every page load would bring deleted sample units straight back.)
+            cursor.execute('SELECT 1 FROM "App_Settings" WHERE Key = ?', ("sample_seeded",))
+            if cursor.fetchone() is None:
+                seed_sample_data(cursor)
+                demo_record_sample_fingerprints(cursor)
+                cursor.execute('INSERT OR REPLACE INTO "App_Settings" ("Key", "Value") VALUES (?, ?)', ("sample_seeded", "1"))
+        else:
+            seed_sample_data(cursor)
 
     conn.commit()
 
@@ -3674,7 +3765,7 @@ require_login()
 if DEMO.get("active"):
     st.markdown("<div class='demo-mark'>DEMO</div>", unsafe_allow_html=True)
     st.info(f"**DEMO copy** - {DEMO['days_left']} day(s) left (ends {DEMO['end']}). The sample data is for exploring; "
-            f"you can add up to {DEMO_MAX_ASSETS} assets of your own ({demo_assets_used()} used). "
+            f"you can have up to {DEMO_MAX_ASSETS} assets and {DEMO_MAX_GROUPS} asset groups of your own ({demo_assets_used()} and {demo_groups_used()} used). "
             f"A license from {DEMO_URL} removes the limits and keeps your data.")
 elif DEMO.get("expired"):
     st.markdown("<div class='demo-mark'>DEMO</div>", unsafe_allow_html=True)
@@ -5741,6 +5832,8 @@ elif view_mode == "Reports/Queries":
       if st.session_state.query_view == "Asset Group":
           edited_df = st.data_editor(df_export, use_container_width=True, height=500, key="editor_asset_list", hide_index=True, row_height=30)
           if btn_save_q:
+              _conv = len([1 for _i, _r in edited_df.iterrows() if demo_would_convert(_r["AssetID"], _r["Year_Make_Model"])])
+              if _conv: demo_cap_gate(_conv)
               for idx, row in edited_df.iterrows():
                   conn.execute('UPDATE "Trucks" SET Year_Make_Model=?, Maintenance_Protocol=?, Current_Meter=?, Motor=?, Fuel=? WHERE AssetID=?', (row["Year_Make_Model"], row["Maintenance_Protocol"], row["Meter"], row["Turbine"], row["Fuel"], row["AssetID"]))
               conn.commit()
@@ -5798,6 +5891,8 @@ elif view_mode == "Asset Groups":
   if btn_rename:
     new_name = rename_val.strip()
     if new_name and new_name != sel_group_to_mod:
+      _pr = demo_pristine_in_group(sel_group_to_mod) if (DEMO_BUILD and DEMO.get("active")) else 0
+      if _pr: demo_cap_gate(_pr, 1)
       with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
         cursor = conn.cursor()
         cursor.execute('UPDATE "Trucks" SET Category = ? WHERE Category = ?', (new_name, sel_group_to_mod))
@@ -5850,7 +5945,7 @@ elif view_mode == "Asset Groups":
   if btn_create:
     ng = new_group_name.strip()
     if ng and ng not in existing_groups:
-      demo_cap_gate(1)
+      demo_cap_gate(1, 1)
       aid = f"GRP-{str(int(time.time()))[-4:]}"
       chk_json = json.dumps([{"ChK1": False, "ItemLabel1": "[ N/A ]", "ChK2": False, "ItemLabel2": "[ N/A ]"}] * 5)
       with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
@@ -5901,6 +5996,7 @@ elif view_mode == "Asset Groups":
         _stack = st.container(key="asset_btn_stack")
       with _stack:   # top button level with the top upload box, bottom button level with the bottom one
         if st.button("Save Asset Modifications", key=f"btn_save_mod_{selected_aid}", use_container_width=True):
+          if demo_would_convert(selected_aid, mod_desc, mod_sn): demo_cap_gate(1)
           with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
             conn.execute("""
                 UPDATE "Trucks" 
