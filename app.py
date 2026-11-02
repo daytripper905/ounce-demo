@@ -116,6 +116,20 @@ def get_image_base64(path):
             return base64.b64encode(img_file.read()).decode()
     return ""
 
+def ask_claude(label, prompt, note=True):
+    """A small link that opens a new Claude chat (claude.ai) with a general question already typed in.
+    Only the generic text below is sent. Nothing from the database, journal or licence is ever added.
+    The person reads and can change the text before sending."""
+    from urllib.parse import quote as _q
+    from html import escape as _html_escape
+    _url = "https://claude.ai/new?q=" + _q(prompt)
+    st.markdown(f'<a href="{_url}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:6px 14px;'
+                f'border:1px solid #2e7d32;border-radius:6px;color:#2e7d32;text-decoration:none;font-weight:600;font-size:0.9rem;">'
+                f'💬 {_html_escape(label)}</a>', unsafe_allow_html=True)
+    if note:
+        st.caption("Opens Claude (claude.ai) in a new tab; you can edit the question first. Ounce of Prevention is independent and is not affiliated with or endorsed by Anthropic. "
+                   "Do not paste passwords, account numbers, private journal text or other people's personal data. AI makes mistakes: check anything that matters, especially health and safety.")
+
 def title_row(title, key):
     """Page title on the left, a regular-size Switchboard button on the right (same on every screen)."""
     _c1, _c2 = st.columns([5, 1.3], gap="small")
@@ -222,6 +236,19 @@ st.markdown(
     [data-testid="stDataFrame"] th *, [data-testid="stDataEditor"] th * { color: #000000 !important; font-weight: 800 !important; }
     [data-testid="stDataFrame"] th svg, [data-testid="stDataEditor"] th svg { display: none !important; }
     
+    /* small grey notes (captions) were hard to read: darker and a little larger */
+    [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * { color: inherit !important; opacity: 0.92; font-size: 0.95rem !important; }
+    .st-key-sw_habit button { border: 3px solid #f1c40f !important; box-shadow: 0 0 0 2px #1e8449; min-height: 3rem; }
+    .st-key-sw_habit button p { font-size: 1.15rem !important; font-weight: 800 !important; }
+    /* Habit builder: one size bigger and as dark as possible */
+    [data-testid="stExpander"]:has(.hb-marker) p, [data-testid="stExpander"]:has(.hb-marker) li, [data-testid="stExpander"]:has(.hb-marker) label,
+    [data-testid="stExpander"]:has(.hb-marker) [data-testid="stCaptionContainer"], [data-testid="stExpander"]:has(.hb-marker) [data-testid="stCaptionContainer"] *,
+    [data-testid="stExpander"]:has(.hb-marker) [data-baseweb="select"] *, [data-testid="stExpander"]:has(.hb-marker) [data-testid="stRadio"] * { font-size: 1.1rem !important; color: #000000 !important; opacity: 1 !important; }
+    [data-testid="stExpander"]:has(.hb-marker) strong { font-weight: 800 !important; }
+    /* Darker text and clearer borders (easier on tired eyes) */
+    textarea:disabled, input:disabled { -webkit-text-fill-color: #111 !important; color: #111 !important; opacity: 1 !important; }
+    [data-baseweb="textarea"], [data-baseweb="input"], [data-baseweb="select"] > div { border: 1px solid #6b6b6b !important; }
+    [data-testid="stDataFrame"] { border: 1px solid #555 !important; border-radius: 4px; }
     .print-only-container { display: none; }
     .screen-only-container { display: block; }
     .demo-mark { position: fixed; top: 38%; left: 0; width: 100%; text-align: center; font-size: 190px; font-weight: 900; color: rgba(150,150,150,0.13); transform: rotate(-30deg); pointer-events: none; z-index: 0; letter-spacing: 12px; }
@@ -490,21 +517,6 @@ SAMPLE_GROUPS = {
             ('Prevention C', 'Mast & substructure structural inspection', 365, 4000, 16.0, 'Inspect mast, pins, welds and guy lines; magnetic-particle test as required.', 'Structural Inspector', 'Fall protection; rig down', 1200.0, 'As required', 'Inspection kit'),
             ('Compliance', 'BOP pressure test & certification', 365, 0, 8.0, 'Function and pressure test the BOP stack and accumulator; file the test record.', 'Certified Technician', 'High pressure; barriers in place', 900.0, 'Seals, test fluid', 'Test pump'),
         ]),
-    'Service Rigs': dict(
-        prefix='SVC',
-        model='Class III Mobile Service Rig {i}',
-        labels=('Mast Height (m)', 'Pulling Capacity (daN)', 'Carrier Axles', 'BOP Class', 'Fuel Type'),
-        parts=('Powerplant / Prime Mover:', 'High Pressure Fluid End:', 'Hydraulic / Power End:', 'Mast / Structural Frame:', 'Control Cab / Instrumentation:', 'BOP / Pressure Control:'),
-        attrs=[('Mast Height', '30 meters', 'Double mast'), ('Carrier', '5-Axle', 'Custom frame'), ('Drawworks', '500 HP', 'Mechanical')],
-        checklist=[('Inspect hydraulic power tongs & dies', 'Check carrier air ride suspension'), ('Verify BOP actuation & remote panel', 'Inspect guy lines, anchors & turnbuckles'), ('Check pump valves & seats', 'Test engine emergency air intake shutoff'), ('Verify drawworks brake holding', 'Inspect tubing elevators & bails'), ('Check accumulator fluid level & pressure', 'Verify escape line & fall arrest gear')],
-        tasks=[
-            ('Prevention A', 'Pre-job rig inspection', 1, 24, 1.0, 'Walk around the rig: guy lines, mast pins, brakes, BOP controls and fluid levels.', 'Rig Operator', 'Rig anchored and chocked', 0.0, 'None', 'Checklist'),
-            ('Prevention A', 'Wire rope & sheave inspection', 7, 100, 1.0, 'Inspect drilling line for broken wires and wear; check sheaves.', 'Rig Operator', 'Mast lowered or locked out', 0.0, 'None', 'Gauges'),
-            ('Prevention B', 'Carrier engine & transmission service', 90, 500, 3.0, 'Change oil, filters and fluids on the carrier; inspect suspension and air system.', 'Mechanic', 'Hot fluids', 450.0, 'Oil, filters', 'Drain pans'),
-            ('Prevention B', 'Hydraulic system & power tong service', 90, 500, 2.5, 'Change hydraulic filters, check hoses and fittings, inspect tong dies.', 'Mechanic', 'Pressure bled off', 250.0, 'Filters, hydraulic oil', 'Hand tools'),
-            ('Prevention C', 'Mast, anchors & drawworks inspection', 365, 3000, 12.0, 'Inspect mast structure, anchors, drawworks and brake system.', 'Master Mechanic', 'Fall protection', 900.0, 'As required', 'Heavy tools'),
-            ('Compliance', 'Annual rig certification & BOP test', 365, 0, 6.0, 'Third-party rig inspection and BOP pressure test; keep certificates on file.', 'Certified Inspector', 'High pressure', 800.0, 'Test fluid', 'Test pump'),
-        ]),
     'Thermal Plant': dict(
         prefix='THERM',
         model='Thermal Generating Unit {i} (25 MW)',
@@ -525,13 +537,16 @@ SAMPLE_GROUPS = {
         model='Rooftop Unit RTU-{i} (25-ton)',
         labels=('Cooling Capacity (tons)', 'Heating Input (MBH)', 'Airflow (CFM)', 'Refrigerant Type', 'Control System'),
         parts=('Compressors / Burners:', 'Supply & Return Fans:', 'Coils & Heat Exchangers:', 'Controls & Thermostats:', 'Electrical & Starters:', 'Ductwork & Piping:'),
-        attrs=[('Cooling capacity', '25 tons', 'Two scroll compressors'), ('Heating', '400 MBH gas', 'Two-stage burner'), ('Controls', 'BAS connected', 'Economizer fitted')],
+        attrs=[('Cooling capacity', '25 tons', 'Two scroll compressors'), ('Heating', '400 MBH gas', 'Two-stage burner'), ('Controls', 'BAS connected', 'Economizer fitted'), ('Source [1]', 'Brumbaugh, Audel HVAC Fundamentals, Vols. 1 to 3, 4th ed. (Wiley, 2004): furnaces and boilers inspected every year before the heating season by a qualified technician; filters checked monthly in the heating season and every 3 to 4 months otherwise; the low-water cut-off float chamber flushed about monthly; a carbon monoxide alarm near gas-fired equipment; vent pipes checked for water, sagging, loose joints and damage. Paraphrased in our own words (book, read)', 'library or bookstore'), ('Source [2]', 'Intervals vary with the equipment, the fuel and local codes. Follow the maker manual and a licensed technician or inspector. Not engineering advice.', 'manufacturer manual and local regulator')],
         checklist=[('Check thermostat & building temperatures', 'Listen for unusual noise or vibration'), ('Check air filters for dirt (visual)', 'Inspect condensate drain for blockage'), ('Check boiler pressure & temperature gauges', 'Look for water or refrigerant leaks'), ('Verify outside air dampers move freely', 'Check belts & pulleys (visual)'), ('Confirm no fault codes on controller', 'Check unit access panels are secured')],
         tasks=[
             ('Prevention A', 'Replace or clean air filters', 30, 720, 0.5, 'Replace pleated filters per the unit schedule and record the pressure drop.', 'Technician', 'LOTO', 40.0, 'Filters', 'Hand tools'),
             ('Prevention A', 'Check condensate drains & pans', 30, 0, 0.5, 'Clear drain lines, check pans and float switches.', 'Technician', 'LOTO', 5.0, 'Treatment tablets', 'Wet vac'),
+            ('Prevention A', 'Flush low-water cut-off float chamber (if fitted)', 30, 0, 0.3, 'On a boiler with a float-type low-water cut-off, briefly open the drain below it to flush sediment from the float chamber, about once a month while the boiler runs [1]. Follow the maker instructions and ask your technician how to test that it shuts the burner off.', 'Boiler Technician', 'Hot water or steam; follow maker instructions', 0.0, 'None', 'Bucket'),
+            ('Prevention A', 'Test carbon monoxide alarm near gas-fired equipment', 30, 0, 0.1, 'Press the test button on the carbon monoxide alarm near the furnace, boiler or gas appliance and confirm it sounds; replace batteries or the unit as its label says [1]. Carbon monoxide has no smell, so never rely on your nose. If it alarms, get everyone outside and call emergency services.', 'Technician', 'Carbon monoxide: leave the building if it alarms', 0.0, 'Batteries', 'None'),
             ('Prevention B', 'Belt, bearing & blower inspection', 90, 2000, 1.5, 'Check belt tension and wear, bearings, pulley alignment and blower wheel.', 'Technician', 'LOTO', 60.0, 'Belts, grease', 'Tension gauge'),
             ('Prevention B', 'Clean condenser & evaporator coils', 180, 4000, 3.0, 'Wash coils, straighten fins, check airflow and refrigerant pressures.', 'Technician', 'LOTO; chemical PPE', 40.0, 'Coil cleaner', 'Coil comb, sprayer'),
+            ('Prevention C', 'Inspect vent pipes, flue & fresh-air openings', 365, 0, 0.5, 'Check vent pipes and the flue for water collecting, sagging, loose joints, corrosion and damage; check fresh-air grilles are open and clear [1]. Blocked or leaking venting can put carbon monoxide into the building.', 'Certified HVAC Technician', 'Carbon monoxide; gas appliances', 0.0, 'None', 'Flashlight, mirror'),
             ('Prevention C', 'Annual burner & refrigerant circuit service', 365, 8000, 6.0, 'Clean burners, test heat exchanger, check refrigerant charge and compressor amps.', 'Certified HVAC Technician', 'Gas and electrical hazards', 150.0, 'Gaskets', 'Gauges, combustion analyzer'),
             ('Prevention C', 'Boiler tune-up & combustion analysis', 365, 8000, 4.0, 'Clean the boiler, test low-water cut-off and combustion efficiency.', 'Boiler Technician', 'Pressure and hot surfaces', 120.0, 'Gaskets', 'Combustion analyzer'),
             ('Compliance', 'Boiler & pressure vessel inspection', 365, 0, 3.0, 'Annual certified inspection and safety valve test; post the certificate.', 'Certified Inspector', 'Hot surfaces', 200.0, 'Tags', 'Test equipment'),
@@ -551,21 +566,6 @@ SAMPLE_GROUPS = {
             ('Prevention C', 'Seal & bearing replacement / overhaul', 365, 8000, 8.0, 'Replace mechanical seals and bearings; inspect impellers or compressor elements.', 'Millwright', 'LOTO; drain and isolate', 900.0, 'Seals, bearings', 'Pullers, press'),
             ('Compliance', 'Relief valve & air receiver inspection', 365, 0, 3.0, 'Test relief valves and have air receivers inspected; keep the certificate on file.', 'Certified Inspector', 'Pressure vessels', 250.0, 'Tags', 'Test equipment'),
         ]),
-    'Forklifts': dict(
-        prefix='FORK',
-        model='Forklift FL-{i} (2.5-tonne)',
-        labels=('Capacity (kg)', 'Lift Height (m)', 'Power Type', 'Mast Type', 'Serial / Fleet No.'),
-        parts=('Engine / Battery & Motor:', 'Mast & Lift Chains:', 'Hydraulics:', 'Brakes & Steering:', 'Tires & Axles:', 'Safety Devices & Lights:'),
-        attrs=[('Capacity', '2,500 kg', 'Rated load plate on mast'), ('Power', 'LPG / electric', 'Per unit'), ('Mast', '3-stage, 4.5 m', 'Chains lubricated every PM')],
-        checklist=[('Check forks, carriage & load backrest', 'Inspect mast & lift chains'), ('Test brakes & parking brake', 'Check steering & hydraulic leaks'), ('Check tires & wheels', 'Test horn, lights & backup alarm'), ('Check seat belt & operator restraint', 'Check fluid levels or battery charge'), ('Check overhead guard & safety decals', 'Check fire extinguisher / LPG tank mounting')],
-        tasks=[
-            ('Prevention A', 'Operator pre-use inspection record', 1, 8, 0.2, 'Complete the daily forklift inspection sheet and tag out any unit with a defect.', 'Operator', 'Truck off and chocked', 0.0, 'None', 'Checklist'),
-            ('Prevention A', 'Lift chain lubrication & fork inspection', 30, 200, 0.5, 'Lubricate chains and check forks for cracks, wear and heel dimensions.', 'Mechanic', 'Mast lowered', 10.0, 'Chain lube', 'Fork gauge'),
-            ('Prevention B', '250-hour service: oil, filters, grease', 90, 250, 2.0, 'Change engine oil and filters; grease mast, steering and axle points; check coolant.', 'Mechanic', 'Truck blocked', 90.0, 'Oil, filters, grease', 'Hand tools'),
-            ('Prevention B', 'Brake, hydraulic & tire inspection', 180, 500, 2.0, 'Inspect brakes and hoses, check hydraulic fluid, measure tire wear.', 'Mechanic', 'Truck blocked', 80.0, 'Hydraulic fluid', 'Gauges'),
-            ('Prevention C', 'Annual mast & chain overhaul', 365, 2000, 6.0, 'Measure chain stretch, inspect rollers, rails and cylinders; replace worn parts.', 'Mechanic', 'Mast blocked', 500.0, 'Chains, bushings', 'Chain gauge'),
-            ('Compliance', 'Annual forklift safety inspection', 365, 0, 1.5, 'Certified annual inspection including load test; keep the record with the truck.', 'Certified Inspector', 'Load test area clear', 150.0, 'None', 'Test weights'),
-        ]),
     'Agriculture': dict(
         prefix='AG',
         model='Farm Tractor / Combine AG-{i}',
@@ -581,50 +581,38 @@ SAMPLE_GROUPS = {
             ('Prevention C', 'Pre-season inspection: header, knives, drives & bearings', 365, 0, 8.0, 'Full off-season inspection of header, drives, bearings and wear parts before the season starts.', 'Mechanic', 'Machine blocked; guards', 700.0, 'Knives, bearings', 'Hand tools'),
             ('Compliance', 'Annual safety check: brakes, lights, PTO shields & SMV sign', 365, 0, 1.5, 'Check road safety equipment, brakes, lighting, slow-moving-vehicle emblem and shielding.', 'Certified Inspector', 'None', 100.0, 'None', 'Checklist'),
         ]),
-    'Generators': dict(
-        prefix='GEN',
-        model='Standby Generator SG-{i} (150 kW)',
-        labels=('Rated Output (kW)', 'Engine (HP)', 'Fuel Type', 'Transfer Switch', 'Fuel Tank (L)'),
-        parts=('Engine & Cooling:', 'Alternator:', 'Fuel System:', 'Starting & Batteries:', 'Transfer Switch & Controls:', 'Exhaust & Enclosure:'),
-        attrs=[('Output', '150 kW standby', '480 V three-phase'), ('Fuel', 'Diesel, 400 L tank', 'Fuel quality tested yearly'), ('Transfer switch', 'Automatic', 'Tested under load')],
-        checklist=[('Check coolant & oil levels', 'Check battery charger status & voltage'), ('Verify controller shows AUTO, no alarms', 'Inspect for fluid or fuel leaks'), ('Check fuel level & tank vents', 'Check block heater operation'), ('Inspect belts & hoses', 'Check air intake & louvers are clear'), ('Verify transfer switch position & indicators', 'Check enclosure, exhaust & signage')],
-        tasks=[
-            ('Prevention A', 'Weekly no-load exercise run', 7, 0, 0.5, 'Run the generator under no load for 10 to 20 minutes; record voltage, frequency and oil pressure.', 'Operator', 'Exhaust ventilation', 5.0, 'Fuel', 'Log sheet'),
-            ('Prevention A', 'Fluid, battery & block heater check', 30, 0, 0.5, 'Check coolant, oil, battery charger and block heater operation.', 'Technician', 'None', 10.0, 'Coolant as needed', 'Hand tools'),
-            ('Prevention B', 'Monthly loaded run test', 30, 5, 1.0, 'Run under at least 30% load for 30 minutes; record readings.', 'Technician', 'Exhaust ventilation', 20.0, 'Fuel', 'Load bank if needed'),
-            ('Prevention B', 'Oil, fuel & air filter change', 180, 100, 2.5, 'Change engine oil and filters, fuel filters and air filter; check belts and hoses.', 'Mechanic', 'Hot fluids', 200.0, 'Oil, filters', 'Hand tools'),
-            ('Prevention C', 'Annual load bank test & transfer switch test', 365, 0, 4.0, 'Run at full load for the required time; test automatic transfer.', 'Certified Technician', 'Electrical hazard; LOTO', 400.0, 'Fuel', 'Load bank'),
-            ('Compliance', 'Annual fuel quality test & battery replacement review', 365, 0, 1.5, 'Test stored fuel for water and microbial growth; replace batteries at the recommended age.', 'Technician', 'None', 150.0, 'Fuel polishing / batteries', 'Test kit'),
-        ]),
     'Cranes & Hoists': dict(
         prefix='CRANE',
         model='Overhead Bridge Crane OC-{i} (10-tonne)',
         labels=('Rated Capacity (tonnes)', 'Span (m)', 'Hoist Type', 'Control Type', 'Serial No.'),
         parts=('Hoist & Wire Rope / Chain:', 'Trolley & Bridge Drives:', 'Hook, Block & Latch:', 'Runway & Rails:', 'Pendant / Radio Controls:', 'Limit Switches & Brakes:'),
-        attrs=[('Capacity', '10 tonnes', 'Rated load plate on bridge'), ('Span', '18 m', 'Runway beams inspected yearly'), ('Hoist', 'Electric wire rope', 'Pendant control')],
-        checklist=[('Test pendant / remote buttons & e-stop', 'Check hook latch & hook condition'), ('Inspect wire rope or chain visually', 'Test hoist upper limit switch'), ('Test brakes by lifting a light load', 'Check runway for obstructions'), ('Listen for noise in hoist, trolley & bridge', 'Check load rating label is legible'), ('Check warning horn / lights', 'Check power festoon / conductor bar condition')],
+        attrs=[('Capacity', '10 tonnes', 'Rated load plate on bridge'), ('Span', '18 m', 'Runway beams inspected yearly'), ('Hoist', 'Electric wire rope', 'Pendant control'), ('Source [1]', 'Mahato, Handbook for Mechanical Maintenance Engineers (2020), chapter on lifting and handling tackle: slings checked before each use; a thorough examination by a competent person at intervals of no more than six months (sooner for hard use, or as local rules require); discard criteria for wire rope slings (broken wires, wear, kinks and crushing, heat damage, corrosion, damaged fittings). Paraphrased in our own words (book, read)', 'library or bookstore'), ('Source [2]', 'Crane and rigging rules differ by province and state. Follow your regulator, the crane maker and a competent person. Not engineering advice.', 'regulator and manufacturer manual')],
+        checklist=[('Test pendant / remote buttons & e-stop', 'Check hook latch & hook condition'), ('Inspect wire rope or chain visually', 'Test hoist upper limit switch'), ('Test brakes by lifting a light load', 'Check runway for obstructions'), ('Listen for noise in hoist, trolley & bridge', 'Check load rating label is legible'), ('Check slings and shackles before use: broken wires, kinks, worn or bent fittings', 'Check each sling is tagged with its rated load'), ('Check warning horn / lights', 'Check power festoon / conductor bar condition')],
         tasks=[
             ('Prevention A', 'Operator pre-shift inspection', 1, 8, 0.2, 'Frequent inspection: controls, limit switches, hook latch, rope and brakes before use.', 'Operator', 'Crane tagged out if a defect is found', 0.0, 'None', 'Checklist'),
             ('Prevention A', 'Wire rope & chain lubrication', 30, 100, 0.5, 'Lubricate wire rope or load chain and inspect for broken wires or stretch.', 'Mechanic', 'Crane locked out', 15.0, 'Rope lube', 'Brush'),
             ('Prevention B', 'Brake & limit switch inspection', 90, 400, 2.0, 'Inspect and adjust hoist brake, test upper and lower limits and overload device.', 'Electrician / Mechanic', 'LOTO; fall protection', 80.0, 'Brake parts', 'Hand tools'),
+            ('Prevention B', 'Thorough examination of slings, shackles & lifting tackle', 180, 0, 1.0, 'A competent person examines every sling, shackle and piece of lifting tackle at least every six months (sooner after rough use or any doubt) and keeps a record [1]. Take wire rope slings out of service for: more than 5% of the wires broken in a length of six rope diameters; three or more broken wires close together; a measured diameter under 90% of nominal; kinks, crushing or a collapsed core; heat damage; corrosion that has cost flexibility; or cracked, bent or worn fittings. When in doubt, take it out. Local rules may be stricter.', 'Competent Person', 'No load on the hook; tag failed slings out of service', 20.0, 'Tags', 'Calipers, record sheet'),
             ('Prevention B', 'Gearbox oil & wheel inspection', 180, 800, 2.5, 'Check gearbox oil, wheels, rails and end trucks.', 'Mechanic', 'LOTO; fall protection', 100.0, 'Gear oil', 'Hand tools'),
             ('Prevention C', 'Periodic inspection with load test', 365, 0, 6.0, 'Documented periodic inspection of the whole crane including a rated load test.', 'Qualified Inspector', 'Test area clear; fall protection', 500.0, 'None', 'Test weights'),
             ('Compliance', 'Annual certification of crane & runway', 365, 0, 3.0, 'Third-party inspection and certification; post or file the certificate.', 'Certified Inspector', 'Fall protection', 400.0, 'Tags', 'Inspection kit'),
         ]),
-    'Refrigeration': dict(
-        prefix='REFRIG',
-        model='Walk-in Cooler / Freezer WR-{i}',
-        labels=('Box Size (m3)', 'Compressor (HP)', 'Refrigerant Type', 'Defrost Type', 'Design Temperature (C)'),
-        parts=('Compressor & Condenser:', 'Evaporator & Fans:', 'Refrigerant Lines & Valves:', 'Controls & Sensors:', 'Door, Gaskets & Box:', 'Alarm & Monitoring:'),
-        attrs=[('Box', '40 m3 walk-in', 'Freezer or cooler'), ('Compressor', '5 HP semi-hermetic', 'Refrigerant leak checks per code'), ('Monitoring', 'Temperature alarm', 'Call-out configured')],
-        checklist=[('Record box temperature & check alarm', 'Check door gaskets & closing'), ('Check for ice build-up on evaporator', 'Listen for unusual compressor noise'), ('Check condenser for dirt (visual)', 'Check drain line & heater tape'), ('Verify door strip curtains & lights', 'Check for oil stains at fittings'), ('Check product stacking clear of airflow', 'Test temperature alarm button')],
+    'Factory Measuring & Test Equipment': dict(
+        prefix='MTE',
+        model='Calibrated Instrument CI-{i} (gauge, torque wrench or meter)',
+        labels=('Instrument Type', 'Range', 'Accuracy / Resolution', 'Calibration Interval (months)', 'Calibration Lab'),
+        parts=('Sensing Element / Anvil:', 'Display / Dial / Scale:', 'Case & Calibration Label:', 'Adjustment Points:', 'Cables & Probes:', 'Reference Standard Used:'),
+        attrs=[('Instrument type', 'Click-type torque wrench, 20-200 Nm', 'Store set to the lowest value'), ('Calibration interval', '12 months', 'Shorten it if the instrument is found out of tolerance'), ('Traceability', 'Lab certificate on file', 'Instrument ID, date, result, reference used, next due date'),
+               ('Source [1]', 'ISO 9001:2015 clause 7.1.5 (monitoring and measuring resources), read through published summaries, not the standard itself: measuring equipment is calibrated or verified at set intervals or before use against traceable references, its status is kept in a record, and action is taken if earlier results are found to be invalid. Using this group helps you keep those records; it does not make anyone certified', 'iso.org; your own quality manual'),
+               ('Source [2]', 'The instrument maker manual, your calibration lab and any customer or regulator requirement set the real intervals and tolerances', 'maker manual; lab certificate')],
+        checklist=[('Check for damage and read the calibration due label before use', 'Do not use anything overdue, dropped or damaged; tag it and set it aside'), ('Check a working gauge against a reference (gauge block, test weight, reference thermometer)|Friday', 'Record the reading and the date')],
         tasks=[
-            ('Prevention A', 'Temperature log & alarm test', 7, 0, 0.3, 'Record temperatures, test the high-temperature alarm and check door seals.', 'Operator', 'None', 0.0, 'None', 'Thermometer'),
-            ('Prevention A', 'Check defrost cycle & drain lines', 30, 0, 0.5, 'Confirm defrost terminates, drain line is clear and heater tape works.', 'Technician', 'Slip hazard', 5.0, 'None', 'Hand tools'),
-            ('Prevention B', 'Clean condenser coil & check fan motors', 90, 0, 1.5, 'Brush and wash the condenser, check fan motors, blades and amp draw.', 'Refrigeration Technician', 'LOTO', 30.0, 'Coil cleaner', 'Brush, gauges'),
-            ('Prevention B', 'Refrigerant leak check & pressure review', 90, 0, 1.5, 'Electronic leak check on joints and valves; record suction and head pressures.', 'Refrigeration Technician', 'Refrigerant handling certification', 40.0, 'None', 'Leak detector'),
-            ('Prevention C', 'Annual compressor oil, contactor & controls service', 365, 0, 4.0, 'Check oil level and colour, test contactors, sensors and defrost controls.', 'Refrigeration Technician', 'LOTO', 250.0, 'Oil, contactors', 'Gauges'),
-            ('Compliance', 'Annual refrigerant leak inspection record', 365, 0, 2.0, 'Complete the documented leak inspection and keep the refrigerant log current.', 'Certified Technician', 'Refrigerant handling certification', 150.0, 'None', 'Leak detector'),
+            ('Prevention A', 'Check before use: condition and calibration label', 1, 0, 0.05, 'Before each use look for damage and read the calibration due date. Overdue, dropped or damaged instruments are tagged and taken out of service.', 'Operator', 'None', 0.0, 'None', 'None'),
+            ('Prevention A', 'Weekly verification against a reference', 7, 0, 0.2, 'Check working instruments against a reference standard (gauge block, test weight, reference thermometer) and record the reading. A verification does not replace calibration.', 'Technician', 'None', 0.0, 'None', 'Reference standard'),
+            ('Prevention B', 'Review calibrations coming due (next 90 days)', 90, 0, 0.5, 'List every instrument due in the next three months and book the calibration lab, allowing for turnaround time and a spare instrument.', 'Supervisor', 'None', 0.0, 'None', 'None'),
+            ('Prevention B', 'Review instruments found out of tolerance', 90, 0, 0.5, 'For any instrument found out of tolerance, list the work measured since its last good check, decide what to re-check, and record the action taken.', 'Supervisor', 'None', 0.0, 'None', 'None'),
+            ('Prevention C', 'Calibrate and file the certificate', 365, 0, 1.0, 'Send each instrument to a calibration lab, or calibrate against traceable standards, at the interval you have set. File the certificate with instrument ID, date, result, reference used and next due date, and update the label.', 'Technician', 'None', 150.0, 'Calibration labels', 'None'),
+            ('Prevention C', 'Review calibration intervals and records', 365, 0, 1.0, 'Shorten the interval where instruments are often found out of tolerance; consider lengthening it where history is clean. Check that records are complete and filed where you can find them.', 'Supervisor', 'None', 0.0, 'None', 'None'),
         ]),
     'Machine Tools': dict(
         prefix='MACH',
@@ -682,6 +670,13 @@ SAMPLE_GROUPS = {
             ("Prevention A", "Update browsers, office & business programs", 30, 0, 1.0, "Update each browser, PDF reader, office suite, accounting and industry program to the latest version from its maker. Remove programs nobody uses.", "IT Technician", "None", 0.0, "None", "Software list"),
             ("Prevention A", "Run antivirus scan & check protection status", 30, 0, 1.0, "Windows: open Windows Security and check every item is green, then run a full scan on one computer. Mac and Linux: confirm the scanner or built-in protection is on and its last run is recent. Record the result.", "IT Technician", "None", 0.0, "None", "Security app"),
             ("Prevention A", "Check disk health & free space", 30, 0, 1.0, "Check free space on every drive (keep 20% free). Windows: Settings > System > Storage. Mac: Disk Utility, run First Aid. Linux: df -h, and smartctl -H on each drive if installed. Replace any drive that reports a warning.", "IT Technician", "Back up first", 0.0, "None", "Disk tools"),
+            ("Prevention B", "Back up the Windows registry and make a restore point before big changes", 90, 0, 0.5, "Before installing major software or changing system settings: Windows: search 'Create a restore point', click Create. To save the registry, open regedit, choose File > Export, pick 'All', and save the file on the backup drive. Do not edit the registry if you are unsure. Helps you recover if something goes wrong.", "IT Technician", "Registry changes can stop Windows starting; back up first", 0.0, "None", "Admin console"),
+            ("Prevention A", "Scan your own network for open ports, unknown devices and old software", 30, 0, 1.0, "On your own network only, with the owner's permission: use a reputable scanner or your router's device list to list every device and open service. Close or switch off anything you do not use, and update or retire anything old. Record what you found.", "IT Technician", "Only scan networks you own or are authorised to test", 0.0, "None", "Network scanner"),
+            ("Prevention B", "Check firewall rules, remote access and default passwords", 90, 0, 1.0, "Review the firewall and router rules. Remove old port forwards and unused remote-access rules. Change any default password. Make sure remote access needs two-step sign-in or a VPN.", "IT Technician", "Take a backup of settings first", 0.0, "None", "Router console"),
+            ("Prevention C", "Yearly: protect your business and personal identity data", 365, 1.0, "Review who holds your key records (bank, tax, corporate documents, customer lists). Lock paper files, encrypt laptops and backup drives, shred what you no longer need, and check your credit report. If you run a web shop, keep card data with the payment provider, not on your own server.", "IT Manager", "None", 0.0, "None", "Shredder"),
+            ("Prevention B", "Lock down the web server and any public-facing programs", 90, 0, 1.5, "If you run a web server (for example IIS) or any program reachable from the internet: install the latest updates, remove sample pages and unused features, turn off directory listing, use strong admin passwords, and review who has administrator rights. If you do not need it reachable, switch it off.", "IT Technician", "Take a backup first", 0.0, "None", "Admin console"),
+            ("Prevention B", "Review webmail and cloud account security (sign-in activity, forwarding, recovery)", 90, 0, 1.0, "For each business email and cloud account: look at recent sign-in activity, confirm no unknown forwarding rules or connected apps, check the recovery phone and email are yours and current, and turn on two-step sign-in. Change the password if anything looks odd.", "IT Manager", "None", 0.0, "None", "Account settings"),
+            ("Prevention C", "Yearly staff refresher: phishing, passwords and safe computing", 365, 1.0, "A short session (30 to 60 minutes): how to spot phishing, use a password manager, keep software updated, lock the screen, and report anything odd without blame. Keep a note of who attended.", "IT Manager", "None", 0.0, "None", "Meeting room"),
             ("Prevention A", "Update the list of AI tools & connected apps", 30, 0, 0.5, "Keep a list of AI assistants, browser add-ons, plug-ins and connected apps in use: who uses each one, and which files, mailboxes or accounts it can reach.", "IT Manager", "None", 0.0, "None", "Tool list"),
             # --- Prevention B: quarterly checks ---
             ("Prevention B", "Test restore from backup", 90, 0, 1.5, "Restore one file and one whole folder from the backup to a different location and open them. Keep three copies of important data: working copy, backup, and one stored off-site.", "IT Technician", "None", 0.0, "None", "Backup software"),
@@ -702,7 +697,845 @@ SAMPLE_GROUPS = {
             ("Compliance", "Annual review of AI-use rules & incident plan", 365, 0, 2.0, "Update the written rules for AI tools (what data may be entered, who approves new tools) and the steps to follow if a tool misbehaves: pause its access, change the passwords it used, record what happened.", "IT Manager", "None", 0.0, "None", "Written rules"),
             ("Compliance", "Annual IT recovery plan review", 365, 0, 2.0, "Update the one-page plan: who to call for IT help and for the internet provider, where passwords and licence keys are kept, and the steps to get back to work if the office or main computer is lost.", "IT Manager", "None", 0.0, "None", "Recovery plan"),
         ]),
+    'Longevity 60 Plus': dict(
+        prefix='L60',
+        model='Longevity Plan 60+ {i}',
+        units=1,
+        unit_names={1: 'My Longevity Plan (60 and over)'},
+        labels=('Age', 'Blood Pressure (mmHg)', 'Resting Heart Rate (bpm)', 'Waist (inches)', 'Family Doctor'),
+        parts=('Vitamins & Supplements:', 'Home Monitors & Test Kits:', 'Exercise Gear:', 'Sleep & Recovery:', 'Kitchen Staples:', 'Traditional Practice Supplies:'),
+        attrs=[('How this plan is ranked', 'Strongest evidence first', 'Labels: Strong, Moderate, Emerging, Traditional. Traditional = long use, few trials.'),
+               ('Sources compared', 'Research books, trials, TCM and Ayurveda', 'Where they agree, the item is near the top. Where they disagree, the note says so.'),
+               ('Not medical advice', 'Check with your doctor', 'Take your results and this list to your family doctor before changing medicines.')],
+        # Ranked roughly from most to least important. Two items per row; "|Monday" makes an item weekly.
+        # Not medical advice. Herbs, supplements, fasting and hard exercise can interact with medicines or health conditions: ask your doctor first.
+        checklist=[
+            ('No tobacco or vaping today (strongest single habit)', 'Alcohol: none, or at most one drink; keep some alcohol-free days'),
+            ('Walk or move: 7,000-9,000 steps (benefit levels off around there for people over 60)', 'Break up sitting: stand and move every 30-60 minutes'),
+            ('Zone 2 exercise 30 minutes (brisk walk or bike where you can still talk) - aim for about 3 hours a week', 'Sleep: 7-8 hours, same bedtime, lights out before 11 pm (TCM and sleep research agree)'),
+            ('Protein at every meal (about 1.2-1.6 g per kg a day over 65: eggs, fish, yogurt, beans, meat)', 'Vegetables, beans and fibre: 2 big servings, aim 30 g fibre a day (Mediterranean pattern - strong evidence)'),
+            ('Olive oil as the main fat; a handful of nuts', 'Eat inside a 10-12 hour window; finish eating 3 hours before bed (Longo, Attia and Ayurveda agree)'),
+            ('Take a multivitamin with a meal (moderate evidence; COSMOS trial: slower memory decline). Look for D3, B12, folate, B6, K, zinc, selenium, iodine, magnesium, low vitamin A, no iron for men', 'Vitamin D3 with a meal (about 1,000 IU in Saskatchewan winters; ask your doctor for your dose)'),
+            ('Omega-3: oily fish (salmon, sardines, trout) or fish-oil capsule with EPA + DHA about 1 g', 'Creatine 3-5 g in water or coffee (moderate evidence for muscle and thinking)'),
+            ('Full-fat yogurt with live cultures once a day: two birds, one stone. Dairy fat has C15:0 (emerging, observational) and live cultures feed the gut microbiome (moderate). Kefir, sauerkraut or kimchi also count [26]', 'Limit added sugar, sweetened drinks and ultra-processed snacks'),
+            ('Take prescribed medicines exactly as directed', 'Water 1.5-2 L; green tea 1-2 cups (TCM tradition, moderate evidence)'),
+            ('Morning: 10-20 minutes of daylight outdoors (body clock, mood, vitamin D)', 'Morning: 10-15 minutes of qigong or tai chi (balance, blood pressure, falls - moderate evidence)'),
+            ('Balance: stand on one leg while brushing teeth, 30 seconds each side', 'Brush two times and floss once (gum disease is linked to heart disease)'),
+            ('Talk to or see at least one person today (loneliness is a major risk factor)', 'Do something with purpose: read, learn, create, volunteer, help someone (purpose in life is linked to longer life)'),
+            ('Breathing or meditation 5-10 minutes (slow breaths, longer out than in)', 'Three lines in a journal: one thing grateful for, one done, one for tomorrow (emerging)'),
+            ('Warm water on waking; scrape the tongue (Ayurveda: traditional)', 'Largest meal at midday, light supper (Ayurveda; early eating is linked to better blood sugar)'),
+            ('Turmeric with black pepper and ginger in food, a little each day (Ayurveda; modest evidence)', 'Press the ST36 point (Zusanli, below the knee) for 1 minute each leg (TCM: traditional)'),
+            ('Evening: screens off and lights low for the last hour', 'Evening: bedroom cool (16-19 C), dark and quiet; no food 3 hours before bed'),
+            ('Evening: warm foot soak 10 minutes (TCM and Ayurveda: traditional; helps you wind down)', 'Evening: pill box filled for tomorrow; set out walking shoes'),
+            ('Strength training, full body 30-45 minutes (squat, push, pull, hinge, carry)|Monday', 'Strength training, full body 30-45 minutes, a different day than before|Thursday'),
+            ('High-intensity intervals: 4 x 4 minutes hard, 3 minutes easy between (only if your doctor agrees)|Friday', 'Long Zone 2 session 45-60 minutes (bike, hike, swim)|Wednesday'),
+            ('Farmer carry: walk 40 steps holding heavy bags or weights, half your body weight in each hand if you can|Tuesday', 'Stretch and mobility 15 minutes: hips, shoulders, spine, ankles|Saturday'),
+            ('Weigh yourself and measure your waist at the navel (keep under 33 in for men)|Monday', 'Home blood pressure: 2 readings, seated and rested, morning and evening for 3 days|Sunday'),
+            ('Oily fish meal (twice a week target)|Tuesday', 'Oily fish meal (second one)|Saturday'),
+            ('Beans or lentils meal (four times a week target)|Monday', 'Plan the week: groceries with vegetables, fish, beans, nuts, olive oil|Sunday'),
+            ('Sauna 15-20 minutes, 2-4 times a week if you have access and your doctor agrees (Finnish studies: linked to fewer heart deaths)|Thursday', 'Time in nature or a park, about 2 hours in total this week (linked to better health)|Saturday'),
+            ('Oil self-massage before a shower, abhyanga (Ayurveda: traditional, calming)|Sunday', 'Call or visit a friend or family member for a real conversation|Wednesday'),
+            ('Refill the pill box; check supplement and medicine supply|Sunday', 'Review the week: sleep, steps, exercise, mood. What is one thing to do better?|Sunday'),
+        ],
+        tasks=[
+            # ---- Prevention A: monthly self-checks (done at home) ----
+            ('Prevention A', 'Monthly home health log: blood pressure, weight, waist, resting pulse', 30, 0, 0.5, 'Average the month of home blood pressure readings (under 130/80 is the usual goal; show your doctor the log if higher). Weigh yourself, measure the waist at the navel (men: under 33 inches is better) and write down the resting pulse on waking. Rising waist with falling muscle is the pattern to catch early. [Strong]', 'Me', 'Rest 5 minutes first; seated, arm at heart level', 0.0, 'Log sheet', 'Home blood pressure monitor, scale, tape measure'),
+            ('Prevention A', 'Monthly fitness check: exercise totals, balance, sit-to-stand, mobility', 30, 0, 0.8, 'Add up the month: Zone 2 minutes (aim for about 180 a week), strength sessions (2-3 a week), one hard interval session a week, steps. Then test: stand on one leg with eyes open (10 seconds or more is the minimum; inability is linked to higher death risk in a large study), count chair stands in 30 seconds, check you can get up from the floor and reach overhead. [Strong]', 'Me', 'Do the balance test next to a counter or wall; stop for chest pain or fainting', 0.0, 'None', 'Watch or step counter, timer, chair'),
+            ('Prevention A', 'Monthly sleep, mood and daylight review', 30, 0, 0.6, 'Sleep: usual bedtime (before 11 pm), hours, snoring, night waking. Mood and people: do I see or talk to people often, do I have a reason to get up? Low mood or loneliness for 2 weeks is worth telling your doctor. Light: morning daylight most days, screens off in the last hour. Fix the weakest one next month. [Strong; TCM traditional]', 'Me', 'If you feel hopeless, call 9-8-8 (Canada) or your doctor now', 0.0, 'None', 'Sleep log or watch'),
+            ('Prevention A', 'Monthly restock: vitamins, medicines and kitchen staples', 30, 0, 0.8, 'Count the multivitamin, vitamin D3, omega-3 and creatine and reorder when under 2 weeks remain. Keep the medicine list current. Stock olive oil, nuts, beans, lentils, oats, frozen vegetables, canned salmon or sardines, eggs, plain full-fat yogurt, green tea, turmeric, ginger. [Moderate]', 'Me', 'Do not double up on doses; check dates on canned goods', 150.0, 'Multivitamin, D3, omega-3, creatine, groceries', 'Pill box'),
+            ('Prevention A', 'Quarterly 3-day food log: protein, fibre and fish check', 91, 0, 1.0, 'Write down everything eaten for 3 days. Compare to: protein 1.2-1.6 g per kg, fibre 30 g, added sugar low, fish twice a week, dairy fat daily. The books disagree here: Longo suggests less protein under 65, Attia and geriatric guidelines suggest more protein over 65 to protect muscle. This plan follows the over-65 view. [Moderate]', 'Me', 'Do not start a restrictive diet without your doctor', 5.0, 'None', 'Food log app or notebook'),
+            # ---- Prevention B: quarterly fitness tests and twice-a-year visits ----
+            ('Prevention B', 'Quarterly fitness tests: 1-mile walk, grip strength, farmer carry', 91, 0, 1.5, 'Time a one-mile brisk walk or measure the distance in 6 minutes (cardio fitness is one of the strongest predictors of long life). Squeeze a hand dynamometer with each hand (for men over 65, under about 27 kg is low). Carry the heaviest weights you can for 1 minute (goal: half your body weight in each hand). Record all three and compare. [Strong]', 'Me', 'Warm up first; stop for chest pain or dizziness; set weights down slowly', 45.0, 'None', 'Watch, hand dynamometer, dumbbells'),
+            ('Prevention B', 'Quarterly skin self-check, head to toe', 91, 0, 0.4, 'Look at all skin with a mirror: new, changing, bleeding or asymmetrical spots. Photograph anything odd and show your doctor. [Strong]', 'Me', 'None', 0.0, 'None', 'Mirror, phone camera'),
+            ('Prevention B', 'Quarterly qigong or tai chi class or lesson block', 91, 0, 4.0, 'Take or renew a class. Tai chi has trial evidence for balance, falls and blood pressure. Qigong is the same family of slow movement and breathing (TCM: traditional). [Moderate]', 'Instructor', 'Stand next to a chair at first', 120.0, 'Class fee', 'Comfortable shoes'),
+            ('Prevention B', 'Twice-yearly dental cleaning and medicine review', 182, 0, 2.0, 'Same trip: dentist or hygienist cleaning and gum check (gum health is linked to heart and brain health), then a stop at the pharmacist. Bring every pill, herb and supplement; ask about interactions (especially ashwagandha, ginseng, turmeric extracts, fish oil with blood thinners) and whether any drug can be stopped. [Strong]', 'Dentist and pharmacist', 'Never stop a prescription without your doctor', 200.0, 'None', 'List of all medicines'),
+            ('Prevention B', 'Twice-yearly safety and screening check at home', 182, 0, 1.5, 'Walk the house for fall hazards (rugs, cords, lighting, stairs, handrails, bath mat, night lights, shoes). Check the home blood pressure cuff against the pharmacy or doctor cuff; replace if readings differ by more than 5-10 points. Answer the STOP-BANG questions for sleep apnea (3 or more yes: ask for a sleep test) and a short mood form (PHQ-9) and share any high result with your doctor. [Strong]', 'Me', 'Use a stable step stool', 20.0, 'Night lights, non-slip mats', 'Flashlight, STOP-BANG and PHQ-9 forms'),
+            # ---- Prevention C: yearly bundles (one lab visit, one checkup visit) ----
+            ('Prevention C', 'Annual blood work bundle (one fasting lab visit)', 365, 0, 1.5, 'One visit, ask your doctor for the whole list. FIRST: fasting insulin (with glucose, giving HOMA-IR) and HbA1c: insulin resistance shows up years before blood sugar rises, so insulin matters more than glucose alone. THEN: lipid panel with ApoB (cholesterol particles); liver (ALT, AST); kidney (creatinine, eGFR, urine ACR); complete blood count; thyroid TSH; ferritin (men: high iron is as important as low); vitamin D (25-OH); vitamin B12; hs-CRP (inflammation; repeat if high). Cheap and common. [Strong]', 'Family doctor / lab', 'Fast 10-12 hours (water is fine)', 0.0, 'None', 'Lab requisition from the doctor'),
+            ('Prevention C', 'Once-in-life blood tests: Lp(a) and hepatitis C', 3650, 0, 0.5, 'Lipoprotein(a) is inherited and does not change much; one test shows if your level is high-risk. Hepatitis C is a one-time test for adults born 1945-1975 or with risk factors. Can be added to the annual blood work visit. [Strong]', 'Family doctor / lab', 'None', 0.0, 'None', 'Lab requisition'),
+            ('Prevention C', 'Optional private test: omega-3 index and fatty acids (including C15:0)', 365, 0, 0.5, 'Optional private test showing omega-3 levels and some blood fatty acids such as C15:0 (found in dairy fat). Evidence for acting on the result is still emerging. [Emerging]', 'Private lab', 'None', 90.0, 'Test kit', 'Kit or lab visit'),
+            ('Prevention C', 'Coronary artery calcium (CAC) scan: discuss with your doctor', 1825, 0, 1.5, 'A CT scan of the heart, not a blood test. A score of 0 is reassuring; over 400 means high risk. Usually considered at about 40-75; repeat after 5 years if zero. About $100-300 and often not insured. Overuse in low-risk people is also debated, so decide with your doctor. [Moderate]', 'Family doctor / imaging clinic', 'Small dose of radiation; ask if it is right for you', 200.0, 'None', 'Referral'),
+            ('Prevention C', 'Annual physical: doctor visit, skin exam, memory screen and PSA talk', 365, 0, 1.5, 'One visit. Bring the home logs, medicine list and test results. Ask: what is my risk for heart disease, diabetes, cancer and falls? Include a skin check, a short memory test (MoCA) to set a baseline, and a talk about the PSA test (not automatic; ask the pros and cons for you). [Strong]', 'Family doctor', 'None', 0.0, 'None', 'Appointment'),
+            ('Prevention C', 'Eye and hearing checkup (same outing)', 365, 0, 2.0, 'Optometrist: eye exam including glaucoma, cataract and macular check (yearly after 65). Audiologist: hearing test every 1-2 years (hearing loss is linked to faster memory decline and isolation). Book them on the same day. [Strong]', 'Optometrist and audiologist', 'None', 120.0, 'None', 'Appointment'),
+            ('Prevention C', 'Yearly scorecard and goals', 365, 0, 1.0, 'Add up the year: days of exercise, steps, sleep hours, vaccines, tests done. Compare to last year and pick two habits to improve. Update the health record binder: results, vaccine dates, medicine list, doctor and emergency contacts. [Moderate]', 'Me', 'None', 0.0, 'Folder', 'Notebook, binder'),
+            # ---- Compliance: screenings, vaccines and records ----
+            ('Compliance', 'Fall vaccines: flu and COVID-19 (one pharmacy visit)', 365, 0, 0.5, 'Every fall. Higher-dose flu vaccines are offered to people 65 and over; ask about the current COVID-19 dose. [Strong]', 'Pharmacist', 'Tell the pharmacist about allergies', 0.0, 'None', 'Appointment'),
+            ('Compliance', 'Vaccine catch-up review: Td, Shingrix, pneumococcal, RSV', 3650, 0, 0.8, 'Td (tetanus and diphtheria) every 10 years. Shingles (Shingrix): 2 doses, 2-6 months apart, from age 50. Pneumococcal pneumonia: usually once at 65. RSV: discuss at 60 and over, especially with heart or lung disease. Ask the pharmacist what your history needs and what is covered. [Strong]', 'Pharmacist / doctor', 'Sore arm and tiredness for a day or two are common', 400.0, 'None', 'Appointment, vaccine record'),
+            ('Compliance', 'Colon cancer screen: stool test (FIT) every 2 years, ages 50-74', 730, 0, 0.3, 'The kit is mailed in Saskatchewan. Colonoscopy is for a positive FIT or family history, as your doctor decides. [Strong]', 'Me / Saskatchewan screening program', 'Follow the kit instructions', 0.0, 'FIT kit', 'Mailed kit'),
+            ('Compliance', 'One-time scans to ask about: aorta ultrasound, bone density, lung screen', 3650, 0, 1.5, 'Ask your doctor about each: (1) one-time aorta ultrasound for men 65-75 who ever smoked; (2) bone density scan for men 70 and over or earlier with fractures, steroids or low weight; (3) lung cancer screening for heavy long-term smokers aged 55-74. Bring this list to the annual physical. [Moderate]', 'Family doctor / imaging clinic', 'None', 0.0, 'None', 'Referral'),
+            ('Compliance', 'Review will, power of attorney and health care directive', 365, 0, 1.5, 'Keep documents current and tell family where they are. Peace of mind is part of staying well. [Traditional]', 'Me / lawyer', 'None', 0.0, 'None', 'Documents'),
+        ]),
 }
+
+# ---- Longevity by life stage ------------------------------------------------------------------------------------------------
+# Six age-band groups, named so they sort in age order (0-12, 13-17, 18-39, 40-59, 60-74, 75 Plus). Delete any band you do not need.
+# 60-74 is written out above; the other adult and senior bands are derived from it so the shared advice stays in step.
+_LNG_NOTE = "Not medical advice. Check with your doctor, nurse or pharmacist."
+def _lt(tab, name, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None"):
+    return (tab, name, days, 0, hrs, desc + " [" + _LNG_NOTE + "]" if False else desc, who, safety, cost, cons, tools)
+
+def _longevity_40_59(g):
+    g = dict(g)
+    g["prefix"] = "L40"; g["model"] = "Longevity Plan 40-59 {i}"; g["unit_names"] = {1: "My Longevity Plan (40-59)"}
+    g["attrs"] = [("How this plan is ranked", "Strongest evidence first", "Labels: Strong, Moderate, Emerging, Traditional. These are the years to build muscle and fitness and to catch problems early."),
+                  ("Different from the 60-74 plan", "Screenings start; fasting plan allowed", "Colon, breast, shingles and PSA talks begin around 50. Fasting-mimicking diet is allowed for healthy adults under 65."),
+                  ("Not medical advice", "Check with your doctor", "Take your results and this list to your family doctor before changing medicines.")]
+    rows = []
+    for pair in g["checklist"]:
+        new = []
+        for it in pair:
+            it = it.replace("about 1.2-1.6 g per kg a day over 65", "about 1.0-1.6 g per kg a day; Longo suggests less, Attia more")
+            if it.startswith("Do something with purpose"): it = "Do something with purpose: learn, create, build, help someone (purpose in life is linked to longer life)"
+            new.append(it)
+        rows.append(tuple(new))
+    rows.append(("Wake the muscles: 10 push-ups, 10 squats, 30-second plank (strength fades without use)", "Try something new each week: skill, sport, language, instrument (keeps the brain building)"))
+    g["checklist"] = rows
+    drop = ("Colon cancer screen", "One-time scans to ask about", "Vaccine catch-up review", "Quarterly qigong")
+    tasks = []
+    for t in g["tasks"]:
+        if t[1].startswith(drop): continue
+        t = list(t)
+        if t[1].startswith("Fall vaccines"): t[5] = "Every fall: flu vaccine and the current COVID-19 dose if your doctor advises. [Strong]"
+        if t[1].startswith("Eye and hearing"): t[2] = 730; t[5] = "Eye exam every 1-2 years (yearly with diabetes or family glaucoma) and a hearing test if you notice loss or work in noise. Book them on the same day. [Strong]"
+        if t[1].startswith("Annual physical"): t[5] = "One visit. Bring the home logs, medicine list and test results. Ask: what is my risk for heart disease, diabetes, cancer and injury? Include a skin check. Talk about the PSA test from about 50 (not automatic; ask the pros and cons for you). [Strong]"
+        if t[1].startswith("Coronary artery calcium"): t[5] = "A CT scan of the heart, not a blood test. Often considered from about 40-45 with early heart disease in the family or a high Lp(a); otherwise usually not needed yet. A score of 0 is reassuring. About $100-300, often not insured. Decide with your doctor. [Moderate]"
+        tasks.append(tuple(t))
+    tasks.append(("Compliance", "Screenings that start in your 40s and 50s", 730, 0, 1.0, "Ask your doctor about each: colon stool test (FIT) mailed every 2 years from age 50 in Saskatchewan; breast screening (mammogram) for women, usually from 40-50 on; cervical (Pap) screening for women on the program schedule; shingles vaccine (Shingrix, 2 doses) from 50; lung screening for heavy long-term smokers. [Strong]", "Family doctor / screening program", "None", 0.0, "FIT kit", "Appointment"))
+    tasks.append(("Prevention A", "Quarterly build-the-base check: lift more, run farther", 91, 0, 1.0, "Strength and fitness built now are the savings account for after 60. Test: max push-ups, bodyweight squats or a heavy carry, and a 1.5-mile run or 12-minute test. Aim to beat last quarter. [Strong]", "Me", "Warm up; stop for chest pain or fainting", 0.0, "None", "Watch, timer"))
+    tasks.append(("Prevention C", "Optional: fasting-mimicking diet (5 days, 1-3 times a year)", 182, 0, 5.0, "Longo's plan: a 5-day low-calorie, plant-based pack. Evidence is early and some is from his own company. Only for healthy adults under 65, never with diabetes, pregnancy, an eating disorder or low weight, and only after your doctor agrees. [Emerging]", "Me / Family doctor", "Not for anyone over 65, underweight or on diabetes drugs", 250.0, "Fasting-mimicking meal pack", "Kitchen scale"))
+    g["tasks"] = tasks
+    return g
+
+def _longevity_18_39(g):
+    g = dict(g)
+    g["prefix"] = "L18"; g["model"] = "Longevity Plan 18-39 {i}"; g["unit_names"] = {1: "My Longevity Plan (18-39)"}
+    g["attrs"] = [("How this plan is ranked", "Strongest evidence first", "Labels: Strong, Moderate, Emerging, Traditional. Habits set now carry forward for decades."),
+                  ("Different from 40-59", "Less testing, more habit building", "Blood work every few years unless risk factors. Strength, fitness, sleep, mental health and not smoking matter most."),
+                  ("Not medical advice", "Check with your doctor", "Take your results and this list to your family doctor before changing medicines.")]
+    tasks = []
+    for t in g["tasks"]:
+        t = list(t)
+        if t[1].startswith(("Coronary artery", "Optional private test", "Once-in-life blood")): continue
+        if t[1].startswith("Annual blood work"): t[1] = "Blood work every 1-3 years (one fasting lab visit)"; t[2] = 1095; t[5] = "Ask your doctor how often for you: yearly with family history of diabetes, high cholesterol or early heart disease; otherwise every few years. Typical list: fasting insulin and HbA1c, lipid panel with ApoB, liver, kidney, blood count, thyroid, ferritin, vitamin D, B12. [Strong]"
+        if t[1].startswith("Annual physical"): t[1] = "Checkup with the family doctor every 1-2 years"; t[2] = 730; t[5] = "Blood pressure, weight, mood, sleep, family history, vaccines, skin check, sexual health and contraception talk, cervical (Pap) screening for women on the program schedule. Ask about anything that worries you. [Strong]"
+        if t[1].startswith("Eye and hearing"): t[2] = 730; t[5] = "Eye exam every 2 years (yearly with glasses changes or diabetes); hearing test if you notice loss, ringing or work or play in loud places (earplugs at concerts). [Strong]"
+        t[5] = t[5].replace("Talk about the PSA test from about 50 (not automatic; ask the pros and cons for you). ", "")
+        tasks.append(tuple(t))
+    g["tasks"] = tasks
+    return g
+
+def _longevity_75_plus(g):
+    g = dict(g)
+    g["prefix"] = "L75"; g["model"] = "Longevity Plan 75 Plus {i}"; g["unit_names"] = {1: "My Longevity Plan (75 and over)"}
+    g["attrs"] = [("How this plan is ranked", "Strongest evidence first", "Labels: Strong, Moderate, Emerging, Traditional. Falls, muscle, medicines and staying connected matter most."),
+                  ("Different from 60-74", "Falls and medicines come first", "Gentler exercise, more protein, careful weight watching, yearly medicine reviews. Cancer screening stops by choice."),
+                  ("Not medical advice", "Check with your doctor", "Take your results and this list to your family doctor before changing medicines.")]
+    rows = []
+    for pair in g["checklist"]:
+        new = []
+        for it in pair:
+            if it.startswith("High-intensity intervals"): it = "Gentle intervals only if your doctor agrees: 1 minute brisk, 2 minutes easy, repeat 5 times|Friday"
+            new.append(it)
+        rows.append(tuple(new))
+    rows.append(("Rise from a chair without using your hands, 10 times (leg strength keeps you independent)", "Wear steady shoes indoors; keep a night light on the path to the bathroom"))
+    rows.append(("Eat something every 4-5 hours; add a protein snack (yogurt, eggs, nuts, cheese) if appetite is low", "Check the pill box was taken; ask for help with anything you cannot do safely"))
+    g["checklist"] = rows
+    tasks = []
+    for t in g["tasks"]:
+        if t[1].startswith(("Colon cancer screen", "Optional")): continue
+        t = list(t)
+        if t[1].startswith("Annual physical"): t[5] = "One visit. Bring the home logs, medicine list and test results. Ask: which medicines can be stopped or reduced? What is my fall risk? Include skin check and memory screen. Cancer screening after 74 is a personal choice with your doctor; PSA screening is usually not advised. [Strong]"
+        tasks.append(tuple(t))
+    tasks.append(("Prevention A", "Monthly weight and appetite check", 30, 0, 0.2, "Weigh yourself on the same scale. Losing weight without trying is a reason to call the doctor. Low appetite for two weeks should be reported. [Strong]", "Me", "None", 0.0, "None", "Scale"))
+    tasks.append(("Prevention B", "Quarterly falls and walking check", 91, 0, 0.6, "Time a 10-foot (3 m) walk and stand up from a chair 5 times. Slower than last time, new unsteadiness or any near-fall: tell your doctor. Ask about a physiotherapist-led balance class. [Strong]", "Me / Physiotherapist", "Stay next to a counter or wall", 0.0, "None", "Stopwatch, chair"))
+    g["tasks"] = tasks
+    return g
+
+# Source list for the child and teen plans. [1], [2]... in the text point to these. Entries marked (read) were opened and checked;
+# entries marked (summary) were taken from published summaries and should be checked at the link before you rely on them.
+_LNG_REFS_KIDS = [
+    ("Source [1]", "CSEP Canadian 24-Hour Movement Guidelines, Early Years (0-4) (read)", "csepguidelines.ca/guidelines/early-years/"),
+    ("Source [2]", "CSEP Canadian 24-Hour Movement Guidelines, Children and Youth (5-17) (read)", "csepguidelines.ca/guidelines/children-youth/"),
+    ("Source [3]", "Public Health Agency of Canada: provincial and territorial routine vaccination schedules, Saskatchewan (read)", "canada.ca, search: provincial territorial routine vaccination infants children"),
+    ("Source [4]", "Public health dental guidance: first visit by age 1, rice-grain then pea-size fluoride toothpaste, help brushing until about age 8 (read; Ontario health unit, confirm with your dentist)", "kflaph.ca/en/health-topics/dental-care-by-age.aspx"),
+    ("Source [5]", "Canadian Paediatric Society / Caring for Kids: screen time and young children (summary)", "cps.ca, caringforkids.cps.ca"),
+    ("Source [6]", "American Academy of Pediatrics: read aloud with children from birth (summary)", "aap.org, early literacy toolkit"),
+    ("Source [7]", "Purpose in life as an asset for well-being and a protective factor against depression in adolescents, 2023 (summary)", "pmc.ncbi.nlm.nih.gov/articles/PMC10566624"),
+    ("Source [8]", "Health Canada / Canadian Paediatric Society infant nutrition: vitamin D drops for breastfed babies, iron-rich first foods (from published guidance; confirm with your nurse)", "canada.ca, Nutrition for healthy term infants"),
+    ("Source [9]", "Canada's Food Guide (healthy eating for children and youth)", "food-guide.canada.ca"),
+]
+
+def _longevity_kids(g):
+    T = lambda tab, nm, days, hrs, desc, who="Parent", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    return dict(prefix="L00", model="Longevity Plan 0-12 {i}", units=1, unit_names={1: "My Child (0-12)"},
+        labels=("Age", "Height (cm)", "Weight (kg)", "Health Card No.", "Family Doctor"),
+        parts=("Vitamins & Feeding:", "Safety Gear:", "Dental & Hygiene:", "Play & Learning:", "Sleep:", "Records:"),
+        attrs=[("How this plan is ranked", "Safety and sleep first", "Then movement, food, teeth, reading and play, vaccines. Written for the parent or caregiver."),
+               ("Numbers in square brackets", "[1], [2] point to the source list", "Sources are listed below as 'Source [n]'. Each task says how strong the evidence is."),
+               ("Vaccine dates", "Saskatchewan schedule [3]", "Your public health nurse books them. Dates here are the routine schedule only."),
+               ("Not medical advice", "Check with your doctor or nurse", "Call 811 (Saskatchewan HealthLine) or 911 if worried.")] + _LNG_REFS_KIDS,
+        checklist=[
+            ("SAFETY: car seat or booster fitted right every trip; seat belt on", "SAFETY under 1 year: sleep on the back, bare firm crib, no pillows, bumpers or smoke"),
+            ("SLEEP: babies 0-3 mo 14-17 h, 4-11 mo 12-16 h, 1-2 yrs 11-14 h, 3-4 yrs 10-13 h, 5-12 yrs 9-11 h [1][2]", "SLEEP: same bedtime and wake time; calm routine of bath, book, bed; screens off an hour before [1][2]"),
+            ("MOVE (sweat): ages 5-12, 60 minutes of hard-enough-to-puff play; ages 1-4, 3 hours of any play [1][2]", "MOVE (bones and muscles): climbing, hopping, monkey bars, carrying, pushing, 3 days a week; vigorous play 3 days [2]"),
+            ("BABIES: tummy time, 30 minutes total a day while awake; floor play; no strapped seating over 1 hour at a time [1]", "BABIES: talk, sing, make faces and read to your baby from birth [6]"),
+            ("SCREENS: none under 2; no more than 1 hour at ages 2-4; no more than 2 hours of fun screen time at 5-12; none at meals or in bedrooms at night [1][2][5]", "READ together 15 minutes a day: look at pictures, ask questions, let them turn pages [6]"),
+            ("FOOD: eat together at the table, no screens; vegetables or fruit at each meal; water and milk; limit juice, sugary drinks, chips and sweets [9]", "FOOD babies: breastmilk or formula first; vitamin D drops 400 IU a day if breastfed; iron-rich foods (meat, beans, iron cereal) from about 6 months [8]"),
+            ("TEETH: wipe baby gums; once teeth show, brush twice a day for 2 minutes with fluoride toothpaste (rice-grain size under 3, pea size from 3); adult helps until about age 8 [4]", "TEETH: floss where teeth touch once a day (floss picks are fine); no bottle or juice in bed; water after snacks [4]"),
+            ("HANDS: wash with soap before eating and after the bathroom or outdoor play; cover coughs", "SUN: hat, shade and sunscreen SPF 30+ in summer, especially 11 am to 3 pm"),
+            ("PLAY: free outdoor play every day, weather allowing; let them get dirty and take safe risks", "PLAY: pretend play, building, drawing and music (practice for thinking and feelings)"),
+            ("CONNECT: 10-15 minutes of one-on-one attention, phone down; hug, laugh, listen", "EMOTIONS: name feelings, stay calm, keep rules clear and the same; praise effort not talent"),
+            ("SAFETY: helmet on bike, scooter, skates and sleds; adult within arm's reach near water", "SAFETY: medicines, cleaners, batteries and small objects locked or out of reach; hot water 49 C or less"),
+            ("SKILLS: one small chore (set the table, tidy toys, feed the pet), ages 3 and up", "SCHOOL age: backpack, lunch, water bottle and homework ready the night before"),
+            ("Family outing: walk, bike, park, swim|Saturday", "Check smoke and carbon monoxide alarms; plan the week's meals with the kids|Sunday"),
+            ("Trim nails; check skin head to toe for rashes, ticks and bruises|Wednesday", "Library visit or new book to share|Saturday"),
+            ("Playdate or time with friends or cousins|Friday", "Family game night or movie together, phones away|Friday"),
+        ],
+        tasks=[
+            T("Prevention A", "Monthly growth, safety and sleep check", 30, 0.5, "Measure height and weight (babies are measured at clinic visits). Walk the home: outlets covered, stair gates, window locks, cords out of reach, furniture anchored, hot water at 49 C or less. Review the month's sleep against the age range [1][2]. [Strong]", "Parent", "None", 0.0, "None", "Tape measure, scale"),
+            T("Prevention A", "Monthly alarm test and emergency plan", 30, 0.3, "Press the smoke and carbon monoxide test buttons; practise the exit plan; keep 811, poison control and 911 where everyone sees them. [Strong]", "Parent", "None", 5.0, "Batteries", "Step stool"),
+            T("Prevention A", "Monthly screen, reading and play review", 30, 0.4, "Add up screen time against the limits [1][2][5]. Count the days you read together [6] and the days of outdoor play and hard play [1][2]. Pick one thing to improve next month. [Moderate]", "Parent", "None", 0.0, "None", "Notebook or phone note"),
+            T("Prevention A", "Monthly independence and chores check", 30, 0.3, "School-age children: can they pack their bag, make a simple snack, tidy their room, and name three people to call for help? Add one new skill a month. [Emerging]", "Parent", "None", 0.0, "None", "None"),
+            T("Prevention B", "Dental check every 6 months", 182, 1.5, "First dental visit by age 1 or when the first tooth shows [4]. Cleaning, fluoride varnish and sealants as the dentist advises. Ask whether your tap water is fluoridated. [Strong]", "Dentist", "None", 120.0, "None", "Appointment"),
+            T("Prevention B", "Car seat, booster and helmet fit check", 182, 0.5, "Check the car seat for fit, expiry date and recalls as the child grows; move to the next stage only at the maker's weight and height limits. Check the helmet still fits and has no cracks. [Strong]", "Parent", "Install per the manual", 0.0, "None", "Car seat manual"),
+            T("Prevention B", "Twice-yearly home safety and medicine cabinet check", 182, 0.8, "Throw out expired medicines, lock up cleaners, check gates, window guards, cords, button batteries and magnets. Re-check poison control number. [Strong]", "Parent", "Wear gloves with old medicines; return to a pharmacy", 10.0, "Locks, latches", "None"),
+            T("Prevention B", "Twice-yearly swimming, bike and skills check", 182, 1.0, "Can they swim 25 m, ride a bike safely, cross a street with care, and say their name, address and a parent's phone number? Book lessons for any gap. [Moderate]", "Parent / Instructor", "Supervise closely near water", 80.0, "Lessons", "Swimsuit, bike"),
+            T("Prevention C", "Well-child checkup (growth, development, safety)", 365, 1.0, "Babies are seen about 2, 4, 6, 12 and 18 months (same visits as vaccines), then yearly at 2-3 years, and before school. Ask about speech, play, behaviour, sleep, feeding and safety. Bring this list. [Strong]", "Family doctor / nurse", "None", 0.0, "None", "Appointment, health card"),
+            T("Prevention C", "Vision and hearing screen", 365, 1.0, "Eye exam by an optometrist yearly in childhood; a hearing check if speech is late, there are repeated ear infections or the child turns up the TV. [Strong]", "Optometrist / audiologist", "None", 0.0, "None", "Appointment"),
+            T("Prevention C", "Development and school-readiness check", 365, 1.0, "Ask the doctor or nurse about developmental screening around ages 2-3 and a school-readiness check around age 4-5 (speech, vision, hearing, vaccines up to date). [Moderate]", "Family doctor / nurse", "None", 0.0, "None", "Appointment"),
+            T("Prevention C", "Swimming and water-safety lesson block", 365, 8.0, "Swimming and water-safety lessons from about age 4; adults supervise always, even with lessons. [Strong]", "Instructor", "Life jackets near open water", 100.0, "Class fee", "Swimsuit, towel"),
+            T("Compliance", "Infant vaccines at 2, 4 and 6 months", 3650, 1.0, "Saskatchewan routine schedule [3]: rotavirus (2, 4, 6 mo), pneumococcal (2, 4 mo), DTaP-IPV-Hib (2, 4, 6 mo). Booked through public health. Ask about the RSV antibody for babies born in or entering the RSV season (Oct 1 to Mar 31) [3]. [Strong]", "Public health nurse", "Stay 15 minutes after shots; fever medicine per nurse", 0.0, "None", "Health card, vaccine record"),
+            T("Compliance", "Vaccines at 12 and 18 months", 3650, 1.0, "Saskatchewan routine schedule [3]: 12 months pneumococcal, meningococcal, MMR-V (measles, mumps, rubella, chickenpox); 18 months DTaP-IPV-Hib and MMR-V. Hepatitis A is offered to Indigenous children [3]. [Strong]", "Public health nurse", "Stay 15 minutes after shots", 0.0, "None", "Health card, vaccine record"),
+            T("Compliance", "School-entry booster at 4 to 6 years", 3650, 0.5, "Saskatchewan routine schedule [3]: tetanus, diphtheria, whooping cough and polio booster (Tdap-IPV) before or at school start. [Strong]", "Public health nurse", "Stay 15 minutes after shots", 0.0, "None", "Vaccine record"),
+            T("Compliance", "Grade 6 school vaccines: HPV and hepatitis B", 3650, 0.5, "Saskatchewan school program [3]: HPV (2 doses) and hepatitis B (2 doses) in Grade 6, at about age 11-12. Watch for the consent form from school. [Strong]", "Public health nurse", "Stay 15 minutes after shots", 0.0, "None", "Consent form, vaccine record"),
+            T("Compliance", "Yearly flu vaccine for ages 6 months and up", 365, 0.5, "Offered every fall to everyone 6 months and older in Saskatchewan [3]. First year under 9, two doses may be needed; the nurse will say. [Strong]", "Public health nurse / pharmacist", "Stay 15 minutes after shots", 0.0, "None", "Appointment"),
+            T("Compliance", "Update the child's health record and emergency card", 365, 0.5, "Keep health card number, allergies, medicines, doctor, emergency contacts and vaccine record in one folder and give the school or daycare the current copy. [Moderate]", "Parent", "None", 0.0, "Folder", "Binder"),
+        ])
+
+def _longevity_teens(g):
+    T = lambda tab, nm, days, hrs, desc, who="Teen / Parent", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    return dict(prefix="L13", model="Longevity Plan 13-17 {i}", units=1, unit_names={1: "My Teen (13-17)"},
+        labels=("Age", "Height (cm)", "Weight (kg)", "Health Card No.", "Family Doctor"),
+        parts=("Vitamins & Food:", "Sports & Safety Gear:", "Dental & Skin:", "Sleep & Mood:", "School & Purpose:", "Records:"),
+        attrs=[("How this plan is ranked", "Sleep, movement and mood first", "Then food, purpose and goals, safety, substances, relationships, vaccines. Teens can use it themselves."),
+               ("Numbers in square brackets", "[2], [3] point to the source list", "Sources are listed below as 'Source [n]'. Each task says how strong the evidence is."),
+               ("Help is available", "Kids Help Phone 1-800-668-6868 or text 686868; 9-8-8", "Free and private, any time. Call 911 in an emergency."),
+               ("Not medical advice", "Check with your doctor or nurse", "Call 811 (Saskatchewan HealthLine) if worried.")] + _LNG_REFS_KIDS,
+        checklist=[
+            ("SLEEP: 8-10 hours; same wake time every day; phone charges outside the bedroom [2]", "SLEEP: no caffeine or energy drinks after noon; screens off an hour before bed [2]"),
+            ("MOVE (sweat): 60 minutes a day of moderate-to-vigorous activity: sport, biking, walking fast, dancing [2]", "MOVE (strength): muscle and bone work 3 days a week (push-ups, squats, climbing, weights with good form); vigorous 3 days [2]"),
+            ("SCREENS: no more than 2 hours of recreational screen time a day; stand and move every 30-60 minutes [2]", "MOOD: check in with yourself: one word for how you feel; talk to a friend or a trusted adult every day"),
+            ("PURPOSE: 20-30 minutes on something that matters to you: a skill, art, sport, building, helping someone [7]", "GOALS: write one goal and the next small step; review it Sunday [7]"),
+            ("FOOD: breakfast; vegetables or fruit with meals; water instead of sugary or energy drinks [9]", "FOOD: protein and iron-rich foods (meat, eggs, beans); dairy or fortified drinks for calcium; teen bones are still building [9]"),
+            ("TEETH: brush 2 minutes twice a day and floss once a day; mouthguard for contact sports [4]", "SKIN: sunscreen and hat; no tanning beds; wash face after sports"),
+            ("SUBSTANCES: no vaping, tobacco, cannabis or alcohol while the brain is still developing; know your plan to leave or call for a ride", "SAFETY: helmet for bike, skateboard and snow sports; seat belt always; never ride with an impaired driver; phone away when driving or biking"),
+            ("RELATIONSHIPS: respect and consent; you can always say no or leave; know a trusted adult to tell", "ONLINE: private accounts; do not share location or images; screenshot and tell an adult if bullied"),
+            ("LEARN: homework routine with short breaks; 20 minutes of reading something you choose", "HABITS: pack your bag, set clothes and plan tomorrow before bed"),
+            ("Family dinner or a real conversation with a parent, phones away|Wednesday", "Team sport, club or longer active outing|Saturday"),
+            ("Time outdoors for about 2 hours in the week|Saturday", "Check in with a friend you have not talked to lately|Friday"),
+            ("Plan the week: school, practice, sleep, one thing for fun|Sunday", "Check the first aid kit and your phone's emergency contacts|Sunday"),
+        ],
+        tasks=[
+            T("Prevention A", "Monthly sleep, mood and screen check", 30, 0.4, "Look at the month: bedtimes and wake times against 8-10 hours [2], mood, school stress, social media time. If sad, anxious or angry most days for 2 weeks, tell a parent or doctor. [Strong]", "Teen / Parent", "If you feel hopeless, call or text 9-8-8 or Kids Help Phone now", 0.0, "None", "Sleep log"),
+            T("Prevention A", "Monthly growth, strength and fitness check", 30, 0.4, "Height, weight, and a simple test (push-ups, squats, plank time, a timed run or fast walk). Growth spurts need extra food and sleep. Aim for 60 minutes a day [2]. [Moderate]", "Teen / Parent", "None", 0.0, "None", "Scale, tape measure, timer"),
+            T("Prevention A", "Monthly purpose and goals review", 30, 0.4, "Check last month's goal and next step. Is there something you are building, learning or helping with? Purpose and meaning are linked to better wellbeing and less depression in teens [7]. [Moderate]", "Teen", "None", 0.0, "None", "Notebook"),
+            T("Prevention A", "Monthly habit review: teeth, sleep, food, phone", 30, 0.3, "Which habit slipped: flossing, breakfast, bedtime, screens out of the bedroom? Choose one to fix. Habits formed now tend to last for decades. [Moderate]", "Teen / Parent", "None", 0.0, "None", "None"),
+            T("Prevention B", "Dental check every 6 months", 182, 1.5, "Cleaning, cavities, braces check, wisdom-tooth plan, sealants. [Strong]", "Dentist", "None", 120.0, "None", "Appointment"),
+            T("Prevention B", "Twice-yearly sports gear and safety check", 182, 0.5, "Helmet, mouthguard, shoes and pads still fit; no cracks. Learn the concussion warning signs and stop play if they appear. [Strong]", "Teen / Parent", "No return to play after a head knock until a doctor says so", 40.0, "Mouthguard, helmet as needed", "None"),
+            T("Prevention B", "Twice-yearly skin, acne and sun check", 182, 0.4, "Look at moles and skin; ask the doctor about stubborn acne. Re-stock sunscreen and hat. [Moderate]", "Teen / Parent", "None", 15.0, "Sunscreen", "Mirror"),
+            T("Prevention B", "Learn CPR and first aid (course)", 1095, 6.0, "Take a first aid and CPR course (St. John Ambulance, Red Cross) and renew every 3 years. Teens are old enough to help in an emergency. [Strong]", "Instructor", "None", 80.0, "Course fee", "Course booking"),
+            T("Prevention C", "Yearly checkup with the family doctor", 365, 1.0, "Growth, blood pressure, vision, mood, sleep, vaping and substance use, sexual health and relationships (a private talk), sports readiness, skin. Teens may ask to be seen alone for part of the visit. [Strong]", "Family doctor", "None", 0.0, "None", "Appointment, health card"),
+            T("Prevention C", "Yearly mental health check-in", 365, 0.5, "Short mood and anxiety screening forms at the checkup (PHQ-A, GAD-7). Treat sleep problems, bullying, panic or loss of interest as health problems, not weakness. [Strong]", "Family doctor", "Call or text 9-8-8 or Kids Help Phone in a crisis", 0.0, "None", "Screening forms"),
+            T("Prevention C", "Yearly vision and hearing check", 365, 1.0, "Eye exam yearly if headaches, squinting or screen strain. Hearing test if you use earbuds loudly or notice ringing. Keep volume at 60% or lower. [Moderate]", "Optometrist / audiologist", "None", 0.0, "None", "Appointment"),
+            T("Compliance", "Grade 8 school vaccines: meningococcal and tetanus-whooping cough", 3650, 0.5, "Saskatchewan school program [3]: meningococcal (Men-C-ACYW-135) and Tdap in Grade 8, at about age 13-14. Watch for the consent form. Catch up any missed Grade 6 doses (HPV, hepatitis B). [Strong]", "Public health nurse", "Stay 15 minutes after shots", 0.0, "None", "Consent form, vaccine record"),
+            T("Compliance", "Yearly flu vaccine", 365, 0.5, "Offered every fall in Saskatchewan [3]. [Strong]", "Public health nurse / pharmacist", "Stay 15 minutes after shots", 0.0, "None", "Appointment"),
+            T("Compliance", "Check the vaccine record and catch up", 365, 0.5, "At the yearly checkup, ask the nurse to compare the record with the Saskatchewan schedule [3] and book anything missed. [Strong]", "Public health nurse", "None", 0.0, "None", "Vaccine record"),
+            T("Compliance", "Update the health record and emergency card", 365, 0.5, "Allergies, medicines, doctor, emergency contacts and vaccine record. Teens should know where it is and carry a copy. [Moderate]", "Parent / Teen", "None", 0.0, "Folder", "Binder"),
+        ])
+
+_LNG_70 = SAMPLE_GROUPS.pop("Longevity 60 Plus")
+SAMPLE_GROUPS["Longevity 0-12 Kids"] = _longevity_kids(_LNG_70)
+SAMPLE_GROUPS["Longevity 13-17 Teens"] = _longevity_teens(_LNG_70)
+SAMPLE_GROUPS["Longevity 40-59 Adults"] = _longevity_40_59(_LNG_70)
+SAMPLE_GROUPS["Longevity 18-39 Adults"] = _longevity_18_39(SAMPLE_GROUPS["Longevity 40-59 Adults"])
+SAMPLE_GROUPS["Longevity 75 Plus"] = _longevity_75_plus(_LNG_70)
+SAMPLE_GROUPS["Longevity 60-74"] = dict(_LNG_70, prefix="L60", model="Longevity Plan 60-74 {i}", unit_names={1: "My Longevity Plan (60-74)"})
+
+# ---- Meaning, purpose and self-esteem (added to every Longevity age band) -------------------------------------------------
+# Books and studies behind the MEANING and SELF-ESTEEM items. Books are summarised in a sentence, not quoted.
+_LNG_REFS_MEANING = [
+    ("Source [10]", "Viktor Frankl, Man's Search for Meaning (Beacon Press edition with the 1984 postscript on 'tragic optimism'; read in full, paraphrased not quoted): meaning can come from work or creating, from love and relationships, and from the stand taken toward unavoidable suffering; life asks each of us questions, and we answer by what we do; a lost future goal drains people; boredom and emptiness (the 'existential vacuum') lie behind much restlessness; humour lets us stand back from ourselves; paradoxical intention (aim for what you fear) is a short-term technique for phobias and sleeplessness. Clinical theory and personal testimony, not trial evidence (book)", "library or bookstore"),
+    ("Source [11]", "Rollo May, The Courage to Create: creating something new takes courage and is part of a healthy life (book)", "library or bookstore"),
+    ("Source [12]", "Erich Fromm, The Art of Loving and Man for Himself: love is a skill built from care, responsibility, respect and knowledge of the other person (books)", "library or bookstore"),
+    ("Source [13]", "Nathaniel Branden, The Six Pillars of Self-Esteem: living consciously, self-acceptance, self-responsibility, self-assertiveness, living purposefully, personal integrity (book)", "library or bookstore"),
+    ("Source [14]", "Jordan B. Peterson, 12 Rules for Life: stand up straight, tell the truth, pursue what is meaningful rather than what is expedient, take responsibility, and start by cleaning your own room (book; opinions on his wider views differ)", "library or bookstore"),
+    ("Source [15]", "Ayn Rand, Atlas Shrugged and The Virtue of Selfishness: pride in achievement, productive work and independence (books; her philosophy is debated, so pair it with Fromm's care for others)", "library or bookstore"),
+    ("Source [16]", "VanderWeele et al., JAMA Internal Medicine 2016: women attending religious services weekly or more had lower death rates in a large US cohort. An association, not proof; community and regular practice are likely part of it (summary)", "search: VanderWeele religious service attendance mortality"),
+    ("Source [17]", "Alimujiang et al., JAMA Network Open 2019: older US adults with a stronger sense of purpose had lower death rates over several years (observational, summary)", "search: Alimujiang purpose in life mortality"),
+    ("Source [18]", "Baumeister et al., Psychological Science in the Public Interest 2003: high self-esteem alone does not cause better performance; self-esteem that follows real effort and responsibility works better than empty praise (summary)", "search: Baumeister self-esteem 2003"),
+]
+
+def _add_meaning(name, g):
+    band = "kids" if "0-12" in name else "teens" if "13-17" in name else "senior" if ("60-74" in name or "75" in name) else "adult"
+    g = dict(g)
+    T = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    if band == "kids":
+        rows = [
+            ("MEANING: at bedtime ask 'What was good today? What was hard? What are you proud of?' and just listen [10][13]", "KINDNESS: do one kind thing for someone and say thanks at dinner (care and responsibility are parts of love [12])"),
+            ("WONDER: look at stars, a bug, a tree or the weather together and ask 'I wonder why...' (awe and quiet are good for the spirit, in any tradition) [16]", "CREATE: let them make something: a drawing, a fort, a song, a story, and praise the effort, not just the result [11][18]"),
+            ("STORIES: read or tell stories of people who faced hard things and kept going; talk about what made them brave [10]", "VALUES: say aloud one family value each day (honesty, courage, kindness) and point out when someone showed it [14]"),
+            ("Family time for service, community or faith, as your family chooses: help a neighbour, visit someone, give to others|Sunday", "Family story night: grandparents' stories, photos, how our family got through hard times|Friday"),
+        ]
+        tasks = [T("Prevention A", "Monthly family values and story night", 30, 1.0, "Share stories of how the family and its elders faced hard times, what they valued and what they hoped for. Children who know their family story tend to cope better with stress. Read a story about courage together. [Moderate; Traditional]", "Parent", "None", 0.0, "None", "Photos, books"),
+                 T("Prevention A", "Monthly praise-the-effort check", 30, 0.2, "Count how often praise went to effort, honesty and kindness rather than looks or grades alone. Self-esteem that follows real effort works better than empty praise [13][18]. [Moderate]", "Parent", "None", 0.0, "None", "None")]
+    elif band == "teens":
+        rows = [
+            ("MEANING: ask each morning 'What is one thing I can do today that matters?' Meaning comes from what we make, whom we love and how we face hard things [10]", "MEANING in hard times: ask 'What could this teach me, and who could it help?' Pursue what is meaningful, not just what is easy [10][14]"),
+            ("SELF-ESTEEM (the six pillars [13]): pay attention, accept yourself, take responsibility, speak up honestly, act on purpose, keep your word", "SELF-ESTEEM is earned: do one hard thing today and finish it; trust built by effort lasts longer than praise [13][18]"),
+            ("COURAGE: do one small brave or creative thing: share an idea, make something, ask a question, try a new skill [11]", "HONESTY: tell the truth and keep one promise to yourself; stand up straight; keep your room and your desk in order [14]"),
+            ("LOVE and CARE: show someone care, respect and responsibility today, and really try to understand them [12]", "QUIET: 5-10 minutes of silence, breathing, meditation, prayer or awe in nature, in your own tradition or none [16]"),
+            ("GRATITUDE: three things you are thankful for, before bed", "INTEGRITY: name one value (honesty, courage, kindness) and one action that matches it"),
+            ("Read 20 pages of a book that gives meaning (Frankl, Fromm, May, Branden, Peterson) or a biography|Sunday", "Talk with an adult you respect about meaning, goals and what you want to build|Wednesday"),
+            ("Serve: help someone or volunteer for an hour (community, congregation or club) [16]|Saturday", "Own your goals: what is my own productive aim and what pride would doing it well bring? Balance it with care for others [12][15]|Sunday"),
+        ]
+        tasks = [T("Prevention A", "Quarterly values, purpose and self-esteem review", 91, 1.0, "Rate each of Branden's six pillars 1-5: living consciously, self-acceptance, self-responsibility, self-assertiveness, living purposefully, integrity [13]. Choose one to practise. Ask: where do I find meaning (making, loving, facing hard things) [10]? Teen purpose is linked to less depression [7]. [Moderate]", "Teen", "If you feel hopeless, call or text 9-8-8 or Kids Help Phone now", 0.0, "None", "Notebook"),
+                 T("Prevention B", "Quarterly book: read and discuss one book", 91, 6.0, "Pick one from the list: Man's Search for Meaning [10], The Courage to Create [11], The Art of Loving [12], The Six Pillars of Self-Esteem [13], 12 Rules for Life [14]. Write three lines about what you will do differently. [Traditional]", "Teen / Parent", "None", 20.0, "Book", "Library card"),
+                 T("Prevention B", "Twice-yearly mentor or elder conversation", 182, 1.0, "Sit down with a coach, teacher, grandparent or other adult you respect. Ask how they found meaning and got through hard times. [Moderate]", "Teen", "None", 0.0, "None", "None")]
+    else:
+        rows = [
+            ("MEANING: name one thing today that gives your life purpose: work, creating, family, helping others. Purpose is linked to longer life [10][17]", "SELF-ESTEEM (the six pillars [13]): pay attention, accept yourself, take responsibility, speak up honestly, act on purpose, keep your word"),
+            ("LOVE and CARE: show care and respect to one person and try to understand them (Fromm [12]); loneliness is a major risk factor", "QUIET: 5-10 minutes of silence, meditation, prayer or awe in nature, in your own tradition or none; community worship linked to longer life in studies [16]"),
+            ("COURAGE: do one small creative or brave thing; the courage to create and to try keeps life growing [11]", "GRATITUDE: three good things before bed; honesty and integrity: one value, one action [14]"),
+            ("Serve: volunteer, help a neighbour or join a group, congregation or club [16][17]|Saturday", "Read 20 pages of a book that gives meaning (Frankl, Fromm, May, Branden, Peterson) [10-14]|Sunday"),
+        ]
+        tasks = [T("Prevention A", "Quarterly meaning and self-esteem review", 91, 1.0, "Rate each of Branden's six pillars 1-5 [13] and choose one to improve. Ask where meaning comes from right now: what I make, whom I love, how I face hard things [10]. Purpose in life is linked to lower death rates in older adults [17]. [Moderate]", "Me", "If you feel hopeless, call or text 9-8-8 or your doctor now", 0.0, "None", "Notebook")]
+        tasks.append(T("Prevention A", "Quarterly: turn the question around (what is life asking of me now?)", 91, 0.5, "Frankl argued that we should stop asking what life owes us and notice that each situation puts a question to us. Write the question your life is asking this season (a person who needs you, a job to finish, a loss to face) and one thing you will do to answer it. His own books are testimony and clinical theory, not trial results [10]. [Traditional]"))
+        tasks.append(T("Prevention B", "Yearly: ask the 'second time around' question", 365, 1.0, "Frankl's challenge, in our words: imagine you are living this year for the second time and you already got something wrong the first time. What would you not repeat, and what would you finally do [10]? Write it down and pick one change. A thinking exercise, not a trial result. [Traditional]"))
+        if band == "senior":
+            tasks.append(T("Prevention A", "Quarterly: keep a goal ahead of you", 91, 0.5, "Frankl described how people who lose sight of any future goal, in prison, unemployment or retirement, can lose their drive [10]. Keep one project with a date ahead of you (a build, a trip, a skill, a book, a job for someone else) and name the next step. Purpose in life is linked to better health in observational studies. [Emerging]"))
+            tasks.append(T("Prevention C", "Yearly life review and legacy letter", 365, 2.0, "Write down what you are proud of, what you learned, whom you want to thank and what you want to pass on (stories, values, photos). Share it with family. Life review is a long-used practice with moderate evidence for mood and meaning [10]. [Moderate]", "Me", "None", 0.0, "None", "Paper, photos"))
+    g["checklist"] = list(g["checklist"]) + rows
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_MEANING if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity")]:
+    SAMPLE_GROUPS[_n] = _add_meaning(_n, SAMPLE_GROUPS[_n])
+
+# ---- "When something breaks": repair and recovery, plus a careful note on psychedelics -----------------------------------
+# Like a failed bearing: fix it AND check what else it damaged. Added to every Longevity age band.
+_LNG_REFS_REPAIR = [
+    ("Source [19]", "Psychedelic-assisted therapy (psilocybin, MDMA): early clinical trials, mostly small; in 2024 the US FDA declined to approve MDMA-assisted therapy; access in Canada is through clinical trials or Health Canada's Special Access Program (summary; check current rules)", "search: Health Canada psilocybin Special Access Program"),
+    ("Source [20]", "Ibogaine: studied for opioid withdrawal in small and observational reports; not an approved treatment in Canada; serious heart-rhythm risks and deaths have been reported (summary)", "search: ibogaine safety QT prolongation review"),
+    ("Source [21]", "Cannabis: no good evidence that it lengthens life; risks include psychosis, dependence and effects on the developing brain; legal for adults 19 and over in Saskatchewan (summary)", "search: Canadian Centre on Substance Use cannabis"),
+    ("Source [58]", "Neuro-electric therapy (NET): a small device with electrodes behind the ears, developed for addiction treatment by Dr Meg Patterson, a Scottish surgeon. Musicians Eric Clapton (early 1970s) and Pete Townshend were reported to have been treated. Both are respected, high-profile artists, and their accounts are a fair reason to test the device properly, but they are personal accounts, not trials. Supporters say it was dismissed too quickly; critics say there are no good controlled trials. A University of Aberdeen review (Fingleton and Matheson, 2012) found four studies of NET for opiate detox, all weak: a double-blind randomized trial of only 18 opiate-dependent patients (Gariti 1992, co-authored by the Pattersons) found no difference from a lower-current placebo in withdrawal or craving; a controlled study of 24 patients (Gossop 1984) found NET patients had more severe early withdrawal than those on methadone; and two uncontrolled studies reported better results (about 80% of the 51% of patients who could be followed up were reported addiction-free in Patterson's own 1984 series of 186; 36.8% known abstinent at one month in a 2012 open-label study of 57). The reviewers concluded the evidence is poor and that better trials with blinding, controls and long follow-up are needed. The UK Medical Research Council declined to fund a full investigation in 1974, and her family says new multi-centre trials are being prepared. Omni magazine (January 1983, article on Patterson's black box by Kathleen McAuliffe) reported her claim that all but four of about 300 patients completed detox drug-free (a detox result, not a long-term one), that she calls it rapid detoxification and not a cure, and that it works best with counselling and a supportive home. In that article only 50% answered her follow-up survey, she herself warned the figures were probably too favourable because people who relapsed were less likely to reply, and a heroin-treatment researcher (Dr Richard Resnick) asked for the missing test: electrodes fitted with the current off. Consumer versions of the device are sold, but none is an approved treatment for addiction. Unproven, not disproven (review, magazine, news, skeptic and family sources, summary)", "search: Meg Patterson neuro-electric therapy"),
+    ("Source [59]", "Deep transcranial magnetic stimulation (BrainsWay H4 coil): US FDA clearance (August 2020) as an aid to short-term smoking cessation in adults. A 262-person randomized, sham-controlled trial found a four-week continuous quit rate of 17.1% with active treatment versus 7.9% with sham (intention to treat). A modest effect, in one condition (company announcement of the trial; summary)", "search: BrainsWay deep TMS smoking cessation FDA clearance"),
+    ("Source [60]", "Systematic review of noninvasive brain stimulation for opioid use disorder, Neuromodulation 2020; 23(3):301-311: five studies, 150 participants combined, too few and too small to combine; the authors call the research thin and say the approach should be investigated further. Also: Auricular neural stimulation for opioid detoxification, Bioelectronic Medicine 2020 (a review; says behind-the-ear nerve stimulators may ease acute withdrawal and calls for more studies) (PubMed, summary)", "search: noninvasive brain stimulation opioid use disorder systematic review"),
+]
+
+def _add_repair(name, g):
+    band = "kids" if "0-12" in name else "teens" if "13-17" in name else "adult"
+    g = dict(g)
+    T = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    if band == "kids":
+        rows = [("REPAIR: if something breaks (injury, illness, a hard time), treat it, then check what else it affected: sleep, mood, school, friends", "HELP: know who to call: Saskatchewan HealthLine 811, poison control, 911; Kids Help Phone 1-800-668-6868 for older kids")]
+        tasks = [T("Compliance", "Yearly 'if something breaks' repair plan", 365, 0.5, "Write down who to call for injury, illness, mood or behaviour trouble, and where the health card and medicine list are. After any illness or injury, book a follow-up and ask what else it may have affected. Like a failed bearing: fix it, then check for collateral damage. [Moderate]", "Parent", "None", 0.0, "None", "Fridge sheet")]
+    elif band == "teens":
+        rows = [("REPAIR: if you slip (a bad night, a vape, a fight, a missed week), restart the next day and tell someone; help early works better", "HELP: Kids Help Phone 1-800-668-6868 or text 686868; 9-8-8; 811 for substance use help; psychedelics, cannabis and ibogaine are not for teens: the brain is still developing until the mid-20s [21]")]
+        tasks = [T("Compliance", "Yearly 'if something breaks' repair and substance-help plan", 365, 0.5, "Know where to get fast help for substance use, mood or safety, without blame: 811, 9-8-8, Kids Help Phone, the family doctor, school counsellor. After any injury or illness, follow up and ask what else it may have affected. Psychedelics and cannabis carry real risks for teens (psychosis, dependence, memory and learning) [21]. [Strong]", "Teen / Parent", "Call 911 for overdose or danger", 0.0, "None", "Contacts list")]
+    else:
+        rows = [("REPAIR: if you slip (drink, smoke, skip a week), restart the next day; ask for help early. If something breaks, treat it and check what else it damaged", "WATCH for addiction: alcohol, opioids, methamphetamine and fentanyl cause the most harm and are best avoided completely; get help early (811, family doctor)")]
+        tasks = [T("Compliance", "Yearly 'if something breaks' repair plan and substance check", 365, 0.8, "Keep a plan for what to do after an injury, illness or crisis: who to call, follow-up visits, and a check for what else was damaged (like replacing a failed bearing and checking the shaft). Answer the short AUDIT-C alcohol questions and ask your doctor about any substance use, with no blame. Help: 811, 9-8-8, family doctor, Saskatchewan addictions services. [Strong]", "Me / Family doctor", "Call 911 for overdose", 0.0, "None", "Contacts list")]
+        age = 25 if "18-39" in name else 0
+        tasks.append(T("Prevention C", "Ask about: supervised psychedelic-assisted therapy (information only)", 730, 0.5, "Some people describe psilocybin or LSD experiences as a reset that changed their sense of meaning, and early clinical trials of psilocybin (depression, end-of-life distress) and MDMA (trauma) are promising but small, and results are still being tested [19]. Ibogaine has been studied for opioid dependence but carries serious heart-rhythm risks and is not an approved treatment in Canada [20]. Legal access in Canada is through clinical trials or Health Canada's Special Access Program, with a trained team. Not for self-treatment: risks include panic, psychosis, and dangerous interactions with antidepressants, lithium and heart medicines. Cannabis has no proven longevity benefit; moderate use by adults carries risks too [21]. Talk to your doctor first. [Emerging]" + (" Not advised before about age 25 (brain still developing)." if age else ""), "Family doctor / psychiatrist", "Never mix with antidepressants, lithium or heart drugs without a doctor", 0.0, "None", "Appointment"))
+        tasks.append(T("Prevention C", "Ask about: brain and nerve stimulation for addiction and cravings (information only)", 730, 0.4, "Researchers are testing gentle magnetic and electrical stimulation for addiction. Best evidence so far: deep transcranial magnetic stimulation was cleared by the US FDA in 2020 as an aid to quit smoking, after a 262-person sham-controlled trial (four-week quit rate 17.1% versus 7.9% with sham) [59]. For opioid use disorder, a 2020 review found only five small studies (150 people) and called the research thin [60]. Neuro-electric therapy, the small ear-electrode device used by Dr Meg Patterson, was reported to have helped Eric Clapton and Pete Townshend, two respected artists whose accounts are a good reason for proper trials; but personal stories are not trials, and the evidence is weak and disputed [58]. Not a self-treatment: do not buy or build devices. Ask your doctor or an addiction clinic what is available and proven. Not medical advice. [Emerging]"))
+    g["checklist"] = list(g["checklist"]) + rows
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    refs = _LNG_REFS_REPAIR if band != "kids" else []
+    g["attrs"] = list(g["attrs"]) + [r for r in refs if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity")]:
+    SAMPLE_GROUPS[_n] = _add_repair(_n, SAMPLE_GROUPS[_n])
+
+# ---- Branden's practical exercises (paraphrased from his books, not quoted) -------------------------------------------------
+_LNG_REFS_BRANDEN = [
+    ("Source [22]", "Nathaniel Branden, The Six Pillars of Self-Esteem (1994): the six practices; the morning and evening sentence-completion routine; self-responsibility; and how parents nurture a child's self-esteem through acceptance, respect, visibility, descriptive praise and age-fit choices (book, read)", "library or bookstore"),
+    ("Source [23]", "Nathaniel Branden, The Psychology of Self-Esteem (1969): the original, deeper account of what self-esteem is (book)", "library or bookstore"),
+    ("Source [24]", "Nathaniel Branden, Honoring the Self (1983): self-esteem, autonomy and the personal life (book)", "library or bookstore"),
+    ("Source [25]", "Nathaniel Branden, The Power of Self-Esteem (1992): the short introduction, a good first read (book)", "library or bookstore"),
+]
+
+def _add_branden(name, g):
+    band = "kids" if "0-12" in name else "teens" if "13-17" in name else "adult"
+    g = dict(g)
+    T = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    if band == "kids":
+        rows = [
+            ("SEEN: get down to their level, listen, and show you understood what they felt or did, without lecturing; children who feel seen learn to see themselves [22]", "PRAISE what you saw, not a verdict: 'The books are in order and it was hard work, thank you' instead of 'good girl' [22]"),
+            ("ACCEPT feelings without arguing or shaming: 'You are really angry.' You do not have to agree to accept [22]", "CHOICES that fit their age: two sweaters to pick from; 'What do you think?' before giving the answer [22]"),
+            ("TOUCH: hugs, cuddles and safe, loving touch every day [22]", "RESPECT: talk to your child with the courtesy you would give a guest; please and thank you; fix the problem, not the child's worth [22]"),
+        ]
+        tasks = [T("Prevention A", "Monthly parent practice: seen, accepted, respected", 30, 0.4, "Look at the month. Did each child feel seen (I responded to what they felt and did)? Accepted (feelings heard, not shamed)? Respected (courtesy, choices fit for age)? Did praise describe what happened instead of judging? Pick one to do more of [22]. Branden: children are best helped toward independence by offering choices as fast as they can handle them [22]. [Moderate]", "Parent", "None", 0.0, "None", "Notebook")]
+    else:
+        rows = [
+            ("SENTENCE COMPLETION in the morning, Mon-Fri (10 minutes): write 'Living consciously to me means...' and add at least 6 different endings fast; then 'If I bring 5 percent more awareness to my day...' (and my closest relationships, and one problem) [22]", "SENTENCE COMPLETION in the evening, Mon-Fri: 'When I reflect on what happens when I bring 5 percent more awareness to my day...' with at least 6 endings. Do not reread yesterday; do not think, just write [22]. Use the locked Private journal on the Philosophy page if you want it private"),
+            ("RESPONSIBILITY: I am responsible for my choices, goals, time, how I talk to people, my happiness and for raising my own self-esteem; nobody owes me my wishes [22]", "Ask: 'What am I willing to do to get what I want?' A wish with a plan is a goal; a wish without one is a daydream [22]"),
+            ("Weekend review of the week's endings, then 6 endings for: 'If any of what I wrote this week is true, it would be helpful if I...'|Sunday", "Start with the short book: Branden's The Power of Self-Esteem, 20 pages a week [25]|Saturday"),
+        ]
+        tasks = [T("Prevention A", "Quarterly 'one-week sentence completion' challenge", 91, 1.5, "For one week, Monday to Friday, do the morning and evening sentence stems from Branden: about 10 minutes each, 6 or more endings per stem, no rereading until the weekend [22]. Keep the notebook. Notice what changes. A step-by-step routine with moderate support from clinical practice, not from large trials. [Traditional]", "Me", "If distress rises, stop and talk to a doctor or counsellor", 0.0, "None", "Notebook")]
+        if band == "teens":
+            tasks.append(T("Prevention B", "Twice-yearly parent talk: seen, accepted, respected", 182, 1.0, "Sit down with a parent or trusted adult. Tell them what helps you feel heard, what choices you want, and what you want to take responsibility for. Parents: listen, accept feelings without lecturing, offer more choices as they are ready [22]. [Moderate]", "Teen / Parent", "None", 0.0, "None", "None"))
+    g["checklist"] = list(g["checklist"]) + rows
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_BRANDEN if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity")]:
+    SAMPLE_GROUPS[_n] = _add_branden(_n, SAMPLE_GROUPS[_n])
+
+# ---- Gut microbiome: fermented foods and plant variety (added to every Longevity age band) ----
+_LNG_REFS_GUT = [
+    ("Source [26]", "Wastyk et al., Cell 2021: a Stanford trial in which 10 weeks of eating fermented foods (yogurt, kefir, kimchi, sauerkraut) increased gut microbiome diversity and lowered inflammation markers. Small trial, moderate evidence (summary)", "search: Wastyk fermented foods Cell 2021"),
+    ("Source [27]", "McDonald et al., mSystems 2018 (American Gut Project): people eating 30 or more different plant foods a week had more diverse gut bacteria than people eating 10 or fewer. Observational (summary)", "search: American Gut Project 30 plants per week"),
+]
+
+def _add_gut(name, g):
+    g = dict(g)
+    if "0-12" in name:
+        row = ("Try one new fruit or vegetable this week; count the different plants the family eats (aim high, a rainbow of colours) [27]|Sunday", "Yogurt with live cultures as a snack or breakfast (plain, with fruit added at home) [26]|Wednesday")
+    elif "13-17" in name:
+        row = ("Count the different plants you eat this week: fruit, vegetables, beans, nuts, seeds, whole grains, herbs; aim for 30 [27]|Sunday", "Yogurt with live cultures or kefir a few times a week; sauerkraut or kimchi if you like it [26]|Wednesday")
+    else:
+        row = ("Count your plants: aim for 30 different plants this week (vegetables, fruit, beans, nuts, seeds, whole grains, herbs, spices) to feed gut bacteria [27]|Sunday", "A fermented food most days (yogurt, kefir, sauerkraut, kimchi): your gut bacteria thrive on variety [26]|Wednesday")
+    g["checklist"] = list(g["checklist"]) + [row]
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_GUT if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity")]:
+    SAMPLE_GROUPS[_n] = _add_gut(_n, SAMPLE_GROUPS[_n])
+
+# ---- Covey's seven habits and "sharpen the saw" (added to every Longevity age band) ----
+_LNG_REFS_COVEY = [
+    ("Source [28]", "Stephen R. Covey, The 7 Habits of Highly Effective People (1989): be proactive; begin with the end in mind; put first things first; think win-win; seek first to understand; synergize; sharpen the saw (renew the physical, mental, social/emotional and spiritual dimensions). Paraphrased in our own words and checked against the book, not quoted (book)", "library or bookstore"),
+    ("Source [29]", "Sean Covey, The 7 Habits of Highly Effective Teens (1998): the seven habits written for teenagers (book, not read for this plan)", "library or bookstore"),
+    ("Source [30]", "Sean Covey, The 7 Habits of Happy Kids (2008): the seven habits as stories for young children (book, not read for this plan)", "library or bookstore"),
+]
+
+def _add_covey(name, g):
+    g = dict(g)
+    T = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    if "0-12" in name:
+        rows = [
+            ("BE IN CHARGE OF YOU: pick one thing you can do all by yourself today, and do it [30]", "PLAY FAIR: share and take turns so everybody wins; listen to a friend before you talk [30]"),
+            ("SHARPEN THE SAW|Sunday: look after your four parts this week: body (play), mind (learn something), heart (time with people), spirit (quiet, nature, a good story) [30]", "FIRST THINGS FIRST: do your chores and homework first, then play [30]|Sunday"),
+        ]
+        tasks = [T("Prevention A", "Monthly 'sharpen the saw' family check", 30, 0.5, "Ask the child and yourself: did we look after body (play, sleep, food), mind (reading, learning), heart (friends, family time) and spirit (quiet, nature, stories, kindness) this month? Pick one to do more of. Sharpening the saw is Covey's seventh habit; the kids' version is in [30]. [Moderate]", "Parent", "None", 0.0, "None", "Notebook")]
+    elif "13-17" in name:
+        rows = [
+            ("BE PROACTIVE: when something goes wrong, pause and choose your response; put your energy into what you can change [29]", "BEGIN WITH THE END IN MIND: each morning ask what you want your life to be about, and check that today fits [29]"),
+            ("SEEK FIRST TO UNDERSTAND: listen to one person today until they feel understood, before you give your view [29]", "THINK WIN-WIN: in a disagreement, look for the answer that works for both people [29]"),
+            ("SHARPEN THE SAW|Sunday: renew all four parts this week: body (sport), mind (learn), heart (friends, family), spirit (quiet, nature, purpose) [28][29]", "FIRST THINGS FIRST: on Sunday pick the three most important things for the week, schedule them first, say no to the rest [29]|Sunday"),
+        ]
+        tasks = [T("Prevention A", "Monthly 'sharpen the saw' review", 30, 0.6, "Rate body, mind, heart and spirit 1-5 for the month. Which is lowest? Choose one action for it next month. Sharpening the saw, Covey's seventh habit, is preventive maintenance for a person [28][29]. [Moderate]", "Teen", "None", 0.0, "None", "Notebook"),
+                 T("Prevention C", "Yearly personal mission statement", 365, 1.0, "Write a few lines on who you want to be and what you want to stand for, then check where your time goes. Begin with the end in mind, Covey's second habit [28][29]. Rewrite it each year. [Moderate]", "Teen", "None", 0.0, "None", "Notebook")]
+    else:
+        rows = [
+            ("BE PROACTIVE: when something goes wrong, pause and choose your response; spend your energy on what you can influence [28]", "BEGIN WITH THE END IN MIND: each morning ask what you want your life to be about, and check that today fits [28]"),
+            ("SEEK FIRST TO UNDERSTAND: listen to one person today until they feel understood, before you give advice [28]", "THINK WIN-WIN: in a disagreement, look for the answer that works for both people [28]"),
+            ("SHARPEN THE SAW|Sunday: renew all four parts this week: body (exercise, food, sleep), mind (read, learn), heart (people, love), spirit (quiet, nature, purpose) [28]", "FIRST THINGS FIRST: on Sunday pick the three most important things for the week, schedule them first, say no to the rest [28]|Sunday"),
+        ]
+        tasks = [T("Prevention A", "Monthly 'sharpen the saw' review: body, mind, heart, spirit", 30, 0.6, "Rate body, mind, heart (relationships) and spirit (meaning, quiet, purpose) 1-5 for the month. Which is lowest? Choose one action for it next month. Sharpening the saw, Covey's seventh habit, is preventive maintenance for a person [28]. [Moderate]", "Me", "None", 0.0, "None", "Notebook"),
+                 T("Prevention C", "Yearly personal mission statement review", 365, 1.0, "Write or revise a few lines on what you want your life to be about, and check where your time actually goes. Begin with the end in mind, Covey's second habit [28]. [Moderate]", "Me", "None", 0.0, "None", "Notebook")]
+    g["checklist"] = list(g["checklist"]) + rows
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_COVEY if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity")]:
+    SAMPLE_GROUPS[_n] = _add_covey(_n, SAMPLE_GROUPS[_n])
+
+# ---- Fromm layer: stillness, being versus having, care, listening, self-knowledge (added to every Longevity age band) ----
+_LNG_REFS_FROMM = [
+    ("Source [31]", "Erich Fromm, The Art of Loving (1956): love as a practised art needing discipline, concentration and patience; care, responsibility, respect and knowledge; being able to be alone is a condition for loving. Paraphrased, not quoted (book)", "library or bookstore"),
+    ("Source [32]", "Erich Fromm, To Have or To Be? (1976): living by having (owning, consuming) versus living by being (aliveness, giving, sharing). Paraphrased, not quoted (book)", "library or bookstore"),
+    ("Source [33]", "Erich Fromm, The Art of Being (1989): practices of willing one thing, being awake and aware, daily concentration, and self-analysis. Paraphrased, not quoted (book)", "library or bookstore"),
+    ("Source [34]", "Erich Fromm, Man for Himself (1947): productive versus non-productive character orientations; developing your own powers. Paraphrased, not quoted (book)", "library or bookstore"),
+    ("Source [35]", "Erich Fromm, The Revolution of Hope (1968): hope as readiness to act, not passive waiting. Paraphrased, not quoted (book)", "library or bookstore"),
+    ("Source [36]", "Erich Fromm, On Disobedience (1981) and The Art of Listening (1994): thinking for yourself; listening with full attention. Paraphrased, not quoted (books)", "library or bookstore"),
+    ("Source [38]", "Erich Fromm (with D.T. Suzuki and R. De Martino), Zen Buddhism and Psychoanalysis (1960): awareness, being awake, and becoming less of a stranger to yourself. Paraphrased, not quoted (book)", "library or bookstore"),
+    ("Source [44]", "P.D. Ouspensky, The Psychology of Man's Possible Evolution (1950), and G.I. Gurdjieff's teaching as described in In Search of the Miraculous (1949): self-observation, identification, and self-remembering. Paraphrased, not quoted. A philosophy of attention, not a treatment (books)", "library or bookstore"),
+    ("Source [54]", "Moving meditation: tai chi, qigong, and the slow forms (kata) of martial arts such as karate, aikido and kung fu train attention through movement; Gurdjieff also taught 'Movements' as attention exercises. Reviews of tai chi suggest benefits for balance and fall prevention in older adults; evidence for other claims is mixed. Side note: many people find that awareness and movement practice feed motivation, since a calm, attentive start makes the next session easier and each session you finish is a small win; research on this is modest and mixed. Learn from a qualified teacher and go at your own pace. Traditional practice, not a treatment. Not medical advice. Check with your doctor (general reference)", "local class or library"),
+    ("Source [37]", "Fromm's ideas are philosophy and psychology, not treatments. They support reflection; they do not replace professional care. Not medical advice. Check with your doctor", "n/a"),
+]
+
+def _add_fromm(name, g):
+    g = dict(g)
+    T = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    if "0-12" in name:
+        rows = [
+            ("LISTEN WITH YOUR WHOLE ATTENTION: give the child five minutes of full attention, no phone, once a day [36]", "CARE FOR SOMETHING ALIVE: let the child water a plant or feed a pet and see it grow [31]"),
+        ]
+        tasks = [T("Prevention A", "Monthly family check: have we been together, not just near each other?", 30, 0.4, "Ask whether each person was really listened to this month. Care and attention are how love is practised [31][36]. [Traditional]", "Parent", "None", 0.0, "None", "Notebook")]
+    elif "13-17" in name:
+        rows = [
+            ("STILL FOR TEN MINUTES: sit quietly, no phone, follow your breathing [31][33]", "THINK FOR YOURSELF: once a day, ask 'do I believe this, or just repeat it?' [36]"),
+            ("BEING OR HAVING|Sunday: what did I do this week for its own sake, not to own or impress? [32]", "CARE: do one thing for somebody that nobody will know about [31]"),
+        ]
+        tasks = [T("Prevention A", "Monthly self-check: what do I want, and who am I becoming?", 30, 0.5, "Write a page on what you want and why. Are you drifting along with the crowd or choosing? [33][36]. [Traditional]", "Teen", "None", 0.0, "None", "Notebook")]
+    else:
+        rows = [
+            ("MORNING STILLNESS: 10-20 minutes at the same time and place; sit, follow the breath, let thoughts pass [31][33]", "EVENING STILLNESS: 10 minutes before bed; follow the breath, no screen [31][33]"),
+            ("ONE THING AT A TIME: for one hour today, do a single thing with full attention (a meal, a walk, a conversation) [31][33]", "LISTEN: let one person finish, then ask one more question before you reply [36]"),
+            ("AWARENESS WALK: on one walk today, notice five things you can see, hear and feel, without naming or judging them [33][38]", "WHO IS DOING THIS?|Wednesday: when you notice you are on autopilot (eating, scrolling, worrying), stop for one breath and come back [33][38]"),
+            ("SELF-OBSERVATION (key practice): three times today, pause and note, without judging, what you are doing, feeling and thinking right now [44]", "NOTICE IDENTIFICATION|Thursday: catch one moment today when you got swallowed by a worry, a screen or an annoyance; just notice it [44]"),
+            ("BEING OR HAVING|Sunday: where this week did I live to own, consume or impress, and where to be and to give? [32]", "CARE, RESPONSIBILITY, RESPECT, KNOWLEDGE|Sunday: pick one person and show one of these four to them this week [31]"),
+            ("MOVING MEDITATION: 10-20 minutes of slow tai chi, qigong or a martial-arts form; attention on the breath and on each movement, at your own pace [54]", "ONE-MINUTE CHECK-IN: three times today, stop and feel your feet, your breath and your hands; then carry on [44][54]"),
+        ]
+        tasks = [T("Prevention A", "Monthly self-analysis session (about 30 minutes)", 30, 0.5, "Sit with a notebook. Ask: what did I feel and not say? What patterns repeat? What did I avoid? Write freely, then ask what it might mean. Fromm describes methods such as free association and following a symptom or feeling [33]. Not therapy. [Traditional]"),
+                 T("Prevention A", "Monthly self-observation review (about 20 minutes)", 30, 0.35, "Look back over the month: when was I most on autopilot? When did I get absorbed in a worry, a screen or an annoyance (what Ouspensky called identification)? When was I awake and present? Pick one situation to watch next month. Not therapy [44]. [Traditional]"),
+                 T("Prevention C", "Quarterly 'having or being' review", 90, 1.0, "Look at spending, time and attention: how much goes to owning, consuming and impressing, and how much to living, giving and learning? Pick one change [32][34]. [Traditional]"),
+                 T("Prevention C", "Yearly hope check: what am I ready to do, not just wish for?", 365, 0.5, "Write down one thing you hope for and one step you will take. Hope here means readiness to act [35]. [Traditional]")]
+    g["checklist"] = list(g["checklist"]) + rows
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_FROMM if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity")]:
+    SAMPLE_GROUPS[_n] = _add_fromm(_n, SAMPLE_GROUPS[_n])
+
+# ---- Motivation layer: habits shared by the wisdom traditions (adult Longevity groups) ----
+_LNG_REFS_WISDOM = [
+    ("Source [55]", "Wisdom traditions, from general knowledge, short quotes and paraphrase only (translations vary): Confucius, Analects 1.4 (Zengzi examines himself three times a day); Psalm 90:12 ('teach us to number our days'); Proverbs 4:23 ('Keep thy heart with all diligence'); Exodus 20:8 (remember the Sabbath day); Pirkei Avot 2:16 (you are not required to finish the work, but you may not walk away from it); a well-known hadith that the most loved deeds are the consistent ones, even if small; the Dhammapada on mindfulness versus heedlessness; the Ignatian Examen (a nightly review of the day). Not scripture study; ask a teacher of your own tradition for more (books)", "library, temple, church, mosque or synagogue"),
+    ("Source [57]", "B.F. Skinner's work on operant conditioning and schedules of reinforcement (general knowledge, paraphrased): reward every time to start a behavior, then reward only some of the time on an unpredictable schedule (variable ratio), which tends to keep behavior going longest and makes it hardest to drop. The same mechanism is used by slot machines and some apps, so use harmless rewards, knowingly. Psychology, not treatment. Not medical advice. Check with your doctor or counsellor if you are in recovery from addiction or an eating disorder (general reference)", "library"),
+    ("Source [64]", "Empathy: Singer T et al., Science 2004; 303:1157-1162 (watching a loved one in pain activates some of the same brain areas as feeling pain); Weng HY et al., Psychological Science 2013; 24:1171-1180 (short compassion training increased helping behavior); Klimecki OM et al., 2013-2014 (compassion training can protect against 'empathic distress' and burnout); Pettigrew TF, Tropp LR, 2006 meta-analysis (contact between groups tends to reduce prejudice); Kidd DC, Castano E, Science 2013 (literary fiction and social understanding; later replications were mixed). Empathy practices help in studies, with modest effects that vary. Paraphrased (journal articles, summary)", "search: Weng 2013 compassion training Psychological Science"),
+    ("Source [69]", "Edwards JJ and colleagues, British Journal of Sports Medicine 2023: a network meta-analysis of 270 randomised trials (about 15,800 people) of exercise and resting blood pressure; isometric training (wall squat, handgrip) ranked highest for systolic pressure and every type of exercise except aerobic interval training lowered pressure. Found through a Prevention magazine item (December 2025) and checked against press coverage of the paper (journal article, summarised)", "journal or library"),
+    ("Source [70]", "Sandstrom GM and Dunn EW, Social interactions and well-being: the surprising power of weak ties, Personality and Social Psychology Bulletin 2014: brief friendly contact with acquaintances and strangers was linked with a better mood and a greater sense of belonging. Small studies and an association, from general knowledge (journal article)", "journal or library"),
+    ("Source [71]", "Sturm VE and colleagues, Emotion 2022 (online 2020): healthy older adults who took a weekly 15-minute 'awe walk' for eight weeks reported more everyday positive emotion and less distress than ordinary walkers. Small study (about 50 people), self-reported, from general knowledge (journal article)", "journal or library"),
+    ("Source [72]", "Levy BR and colleagues, Journal of Personality and Social Psychology 2002: older adults with more positive views of their own ageing lived about seven and a half years longer, after adjusting for age, health, income and loneliness. Observational; a later study (2018) linked positive age beliefs to less dementia in people carrying a risk gene. From general knowledge (journal articles)", "journal or library"),
+    ("Source [73]", "C.G. Jung's 1960 interview with Gordon Young on the art of living, in McGuire W and Hull RFC (eds), C.G. Jung Speaking (Princeton, 1977), pp. 450-452: his short list of what makes a person happy (health of body and mind, close relationships, a sense of beauty, reasonable living standard and satisfying work, and a philosophy or faith that copes with life's ups and downs). Paraphrased; read via a secondary summary, not the book", "library: C.G. Jung Speaking"),
+    ("Source [62]", "Edward de Bono, Lateral Thinking (1970) and Six Thinking Hats (1985): deliberate sideways moves (random entry, provocation, challenging assumptions) to find new ideas. Widely taught; controlled research is thin, so treat it as a toolkit. Paraphrased in our own words (books, summary)", "library or bookstore"),
+    ("Source [63]", "Howard Gardner, Frames of Mind (1983): several kinds of intelligence, used here only as a lens for noticing strengths, not a test; many psychologists doubt the intelligences are separate, measurable abilities (book, summary)", "library or bookstore"),
+    ("Source [61]", "Free association (Freud's method of saying whatever comes to mind) and expressive writing (James Pennebaker and later reviews): writing freely about thoughts and feelings helps some people, but the average effect in studies is small. A self-reflection exercise, not therapy. Described in our own words (general knowledge, summary)", "search: expressive writing Pennebaker review"),
+    ("Source [56]", "Common thread: Judaism, Christianity, Islam, Confucian thought, Buddhism and Hindu practice all attach daily or weekly habits (prayer or reflection at fixed times, a day of rest, washing, fasting and moderation, giving, gratitude, gathering) to meaning and community. Studies link religious community and regular practice with longer life and better wellbeing, but these are observational and cannot separate faith from social ties and habits. A tradition, not a treatment. No faith is promoted or left out. Not medical advice. Check with your doctor", "n/a"),
+]
+
+def _add_wisdom(name, g):
+    g = dict(g)
+    T = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    rows = [
+        ("MOTIVATION|MORNING PAUSE: on waking, one minute: feel your breath, name one thing you will do well today (first of three daily pauses) [55]", "MOTIVATION|MIDDAY PAUSE: stop, stand, walk or stretch for a few minutes and notice how you are, in body and mind (second of three daily pauses) [44][54]"),
+        ("MOTIVATION|NIGHTLY REVIEW: before bed, ask 'what did I do today, and what will I do better tomorrow?' (Confucius's three-times-a-day self-check, the Ignatian Examen) [55]", "MOTIVATION|SMALL AND CONSISTENT: do one tiny good habit today, even if small, because consistent deeds count most [55]"),
+        ("MOTIVATION|ROLL THE DICE: after something dull or hard today, roll a die and do the matching item from your list of six joys (ideally ones that also make someone else happy); a friend or your AI helper can roll for you. Eyes open: you earned it [57]", "MOTIVATION|SEE THE WIN: tick it off and say 'done'; early on, reward yourself every time, then only some of the time [57]"),
+        ("MOTIVATION|THANKS: say one thing you are grateful for before a meal or on waking (grace, blessings, thanks) [55][56]", "MOTIVATION|WASH before meals and after the toilet; the traditions made hygiene a daily ritual [56]"),
+        ("EMPATHY: ask one person one real question and really listen; before you answer, guess what they are feeling [64]", "SEE IT THEIR WAY: when someone annoys you, say their best case in your own words before you reply [64]"),
+        ("MOTIVATION|THINK SIDEWAYS: once today, ask 'what else could this be?' or 'what if the opposite were true?' about something you are working on (de Bono's lateral thinking) [62]", "MOTIVATION|STRENGTHS: which kinds of smarts did I use today: words, logic, space, music, hands, people, self-knowledge, nature? (Strengths lens, Philosophy page; a lens, not a test) [63]"),
+    ]
+    tasks = [
+        T("Prevention A", "Weekly day of rest (a Sabbath)", 7, 2.0, "Pick one day with no work, no errands and no screens for part of it. Rest, walk, see people. 'Remember the Sabbath day' (Exodus 20:8) is one of the oldest scheduled habits. Rest and a weekly rhythm help keep you going [55][56]. [Traditional]"),
+        T("Prevention A", "Refresh my list of six joys (for the dice)", 30, 0.2, "Write or update six things you enjoy that cost little and harm no one: music, a game of crib or a quick game of chess with someone, a call, a hot shower, time with someone you love, a funny video, a walk somewhere pretty. Pick ones that also bring joy to someone else when you can. Not food or anything risky if that is a problem for you. The daily 'roll the dice' reward uses this list [57]. [Traditional]"),
+        T("Prevention A", "Weekly empathy practice: walk in their shoes", 7, 0.3, "Pick one person you disagree with or find difficult. Write their best case in three sentences, as they would say it. Then recall a time you were hurting and how you wanted to be treated, and use that as a bridge. Seeing someone you care about in pain activates some of the same brain areas as feeling pain yourself, so your own hard times can help you understand theirs [64]. You do not need to go looking for pain: use what life has already given you. Empathy is a skill that grows with practice; it is not a verdict on anyone. [Moderate]"),
+        T("Prevention A", "Weekly compassion minutes (loving-kindness)", 7, 0.2, "Sit quietly for a few minutes and silently wish a person well, then someone neutral, then someone difficult, then yourself: 'may you be safe, may you be well, may you be at ease'. Studies of short compassion training found people became more willing to help others [64]. If it brings up pain, stop and talk with someone you trust. Not medical advice. [Moderate]"),
+        T("Prevention A", "Weekly: greet a few neighbours or shopkeepers (weak ties)", 7, 0.1, "Say a real hello, with a smile and a sentence, to a few people you meet but do not know well: a neighbour, a clerk, someone at the bus stop. Short friendly contacts like these are linked with a better mood and a sense of belonging, and they cost nothing. An association from small studies [70]. [Emerging]"),
+        T("Prevention A", "Weekly: take an 'awe walk' (15 minutes, look up and out)", 7, 0.25, "Walk for about 15 minutes and deliberately look for something that fills you with wonder: a wide view, the detail of a leaf, light through trees. In a small eight-week study of older adults, awe walkers felt more everyday joy and less distress than people who simply walked [71]. Costs nothing. [Emerging]"),
+        T("Prevention A", "Quarterly: check what you believe about growing older", 91, 0.3, "Write down what you tell yourself about ageing ('it is all downhill', 'too late to learn'). Older adults with more positive views of their own ageing lived longer in a long observational study, even after allowing for health [72]. Replace one gloomy belief with a true, useful one, and act on it. This does not mean illness is your fault. [Emerging]"),
+        T("Prevention A", "Monthly: do one thing that will outlast you", 30, 1.0, "Teach a skill, mentor someone in your trade, write down a family story, repair something for a neighbour. Erik Erikson called caring for what outlasts you the task of later adulthood ('generativity'); a stronger sense of purpose goes with longer life in several large observational studies. Jung also kept making things to the end [73]. [Emerging]"),
+        T("Prevention B", "Quarterly: ask your doctor about isometric exercise for blood pressure", 91, 0.3, "Isometric exercise (holding a position without moving, such as a wall sit or a hand grip) lowered blood pressure at least as well as other kinds in a large review of trials [69]. Ask your doctor whether it suits you before starting, especially if your pressure is high or you have heart disease. Breathe normally, never hold your breath, and stop if you feel dizzy or have chest pain. [Moderate]", "Me", "Ask a doctor first if you have high blood pressure or heart disease; do not hold your breath"),
+        T("Prevention B", "Monthly: spend time with someone outside your usual circle, or give your time", 30, 1.0, "Talk with, or volunteer alongside, someone of a different age, background or life from yours, and ask about their life. Contact between groups tends to reduce prejudice [64]. [Moderate]"),
+        T("Prevention B", "Monthly: read a story from another life", 30, 2.0, "A novel, memoir or biography about someone unlike you. Readers of fiction tend to score higher on empathy, but the claim that reading raises empathy is mixed in the research, so enjoy it and treat the benefit as possible, not proven [64]. [Emerging]"),
+        T("Prevention A", "Monthly review with a thinking partner (optional)", 30, 0.5, "Once a month, sit down with a thinking partner (a friend, a mentor, a counsellor or an AI) and review the month. Bring your habit counts, your strengths chart and your goals, and use the Monthly review prompt on the Philosophy page (Talk it over). Ask: what patterns do you see, what should I keep, shrink or drop, and what am I not seeing? Ask it to push back and disagree. Do not paste Private journal text into any online service. Take the advice as input, not a verdict, and finish with one real action, ideally involving a real person. Optional: skip a month if you like. Finish with a reward from your six joys. [Emerging]"),
+        T("Prevention A", "Weekly think-sideways session (lateral thinking)", 7, 0.3, "Pick one problem you are stuck on. Spend ten minutes on the Think sideways box (Philosophy page): a random word, a provocation, or the six thinking hats. List ten alternatives before choosing, then sleep on it. Creativity is a habit: the more often you step sideways, the easier it gets. A toolkit, not a guarantee; research on it is thin [62]. [Traditional]"),
+        T("Prevention A", "Weekly free association (private journal)", 7, 0.2, "Write whatever comes to mind for five to ten minutes without stopping, correcting or judging it, then read it back and note one surprise. Part of knowing yourself. Use the locked Private journal on the Philosophy page so nobody else can read it. Self-reflection, not therapy: if something painful comes up, stop and talk with a counsellor or someone you trust. Not medical advice [61]. [Traditional]", "Me", "If distress rises, stop and talk to a doctor or counsellor", 0.0, "None", "Notebook or Private journal"),
+        T("Prevention A", "Weekly act of giving", 7, 0.5, "Give time, food, money or a visit to someone (tzedakah, zakat, tithe, alms in the traditions). Giving ties you to others and gives the daily habits a reason [55][56]. [Traditional]"),
+        T("Prevention A", "Monthly motivation check: why am I doing this?", 30, 0.4, "Write one line on why these habits matter to you (the people, the work, the years you want). Is it still true? Pick one habit to restart. You are not required to finish the work, but you may not walk away from it (Pirkei Avot 2:16) [55]. [Traditional]"),
+        T("Prevention C", "Yearly fast or simple-living week (optional)", 365, 1.0, "Many traditions set aside a time of fasting or moderation (Ramadan, Yom Kippur, Lent). Do something modest and safe, such as a week of plainer food or fewer screens. Do not fast if you have diabetes, take medication, are pregnant or have had an eating disorder, and ask your doctor first [56]. Not medical advice. [Traditional]", "Me", "Fasting can be unsafe with some conditions; ask your doctor", 0.0, "None", "None"),
+    ]
+    g["checklist"] = list(g["checklist"]) + rows
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_WISDOM if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity") and any(s in k for s in ("18-39", "40-59", "60-74", "75"))]:
+    SAMPLE_GROUPS[_n] = _add_wisdom(_n, SAMPLE_GROUPS[_n])
+
+# ---- Checked-claims layer: items from the 2025 claim review that are Moderate or better, or sensible and low risk, and can be done on a schedule (adults and seniors only) ----
+_LNG_REFS_CHECKED = [
+    ("Source [74]", "CANMAT 2016 clinical guidelines for major depressive disorder (Lam RW et al., Canadian Journal of Psychiatry): bright light therapy is a first-line option for seasonal affective disorder. From general knowledge, not re-read tonight (clinical guidance)", "journal or library"),
+    ("Source [75]", "Morris MC et al., Neurology 2018 (Rush Memory and Aging Project): older adults who ate about a serving of leafy greens a day showed slower decline in thinking skills. Observational, so an association (journal article, from general knowledge)", "journal or library"),
+    ("Source [76]", "Short bouts of brisk walking and other exercise are linked to lower anxiety in small trials and reviews. Early evidence, from general knowledge (reviews)", "journal or library"),
+    ("Source [77]", "Osteoporosis Canada vitamin D recommendations 2010 (Hanley DA et al., CMAJ 2010; 182:E610): 400-1000 IU a day for healthy adults under 50, 800-2000 IU a day over 50. Read through a clinic summary; confirm the current guidance with your pharmacist or doctor. Winter sunlight at Canadian latitudes lacks the UVB needed to make vitamin D", "osteoporosis.ca; your pharmacist"),
+    ("Source [78]", "Manson JE et al., the VITAL trial, New England Journal of Medicine 2019; 380:33-44: about 25,000 healthy US adults taking 2000 IU a day of vitamin D3 had no fewer cancers or cardiovascular events than placebo. Martineau AR et al., BMJ 2017;356:i6583 (pooled data from 25 trials): regular vitamin D lowered the risk of acute respiratory infection, with the clearest benefit in people who were deficient at the start; later trials in people with adequate levels found little. A commonly cited adult upper limit is 4000 IU a day (general knowledge; confirm with your pharmacist)", "journal or library"),
+    ("Source [79]", "Dietary Reference Intakes (Health Canada and the US National Academies): each vitamin and mineral has a 'tolerable upper intake level'. Fat-soluble vitamins (A, D, E, K) can build up; high doses of B6 over long periods can damage nerves; beta-carotene supplements raised lung cancer in smokers in two large trials (ATBC and CARET). From general knowledge; confirm amounts with your pharmacist", "Health Canada Dietary Reference Intakes; your pharmacist"),
+]
+
+def _add_checked(name, g):
+    if not any(x in name for x in ("18-39", "40-59", "60-74", "75")): return g
+    g = dict(g)
+    T = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    tasks = [
+        T("Prevention A", "Winter weeks: 30 minutes of bright morning light (low winter mood)", 7, 0.5, "From autumn to spring, spend about half an hour in bright light soon after waking: outdoors on a bright morning, or at a 10,000 lux light box if your doctor agrees. Bright light is a first-line option for seasonal low mood in clinical guidance [74]. Seek help if low mood is severe or lasts. [Moderate]", "Me", "Ask a doctor first if you have eye disease, bipolar disorder or take medicines that make you sun-sensitive"),
+        T("Prevention A", "Weekly: leafy greens most days (about a serving a day)", 7, 0.1, "Spinach, kale, lettuce, chard, collards. Older adults who ate about a serving a day showed slower decline in thinking skills, an association and not proof [75]. They are also good for the heart and gut. [Emerging]", "Me", "If you take warfarin (a blood thinner), keep your leafy greens steady and ask your doctor, because vitamin K affects it"),
+        T("Prevention A", "Weekly: a brisk 10-minute walk when anxious or stuck", 7, 0.2, "When your mind is racing, walk briskly for ten minutes. Short bouts of walking and exercise are linked to lower anxiety in small trials [76]. It does not replace care when anxiety is severe or lasting. [Emerging]"),
+        T("Prevention C", "Yearly: add up everything you take (vitamins, minerals, supplements)", 365, 0.3, "Write every pill, powder and fortified product on one list and add up the vitamin A, vitamin D, vitamin E, B6, zinc, iron and calcium across all of them. More is not better: fat-soluble vitamins can build up, long-term high B6 can damage nerves, and beta-carotene supplements raised lung cancer in smokers [79]. Staying near the daily value from a multivitamin and food is the sensible default. Take the list to your pharmacist or doctor. [Moderate]", "Me", "Do not exceed the upper limits; ask a pharmacist or doctor, especially in pregnancy, with kidney or liver disease, or on blood thinners"),
+        T("Prevention C", "Yearly (October): review vitamin D with your doctor or pharmacist", 365, 0.3, "From about October to March the sun at our latitude is too weak to make vitamin D in your skin, so many Canadians use a supplement. Osteoporosis Canada's guidance (2010) is 400-1000 IU a day for healthy adults under 50 and 800-2000 IU a day over 50 [77]. A large trial in healthy adults found 2000 IU a day did not prevent cancer or heart disease, so it is for bones and for people who are low, not a cure-all [78]. Pooled trials found fewer chest and respiratory infections with regular doses, mostly in people who started with low levels, and little effect in people who were already replete [78]. Do not go over about 4000 IU a day without medical advice. Ask whether a blood test is worth it for you. [Moderate for avoiding deficiency; not shown to prevent heart disease or cancer in healthy adults]", "Me", "Ask your doctor or pharmacist about the dose, especially with kidney disease, high calcium or sarcoidosis; do not exceed the upper limit"),
+    ]
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_CHECKED if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity")]:
+    SAMPLE_GROUPS[_n] = _add_checked(_n, SAMPLE_GROUPS[_n])
+
+# ---- Back and neck layer (adult Longevity groups): walking, exercise, workshop posture, headache diary, red flags ----
+_LNG_REFS_SPINE = [
+    ("Source [65]", "Foster NE et al. Prevention and treatment of low back pain: evidence, challenges, and promising directions. The Lancet 2018; 391:2368-2383: first-line care is education, staying active and exercise, with routine imaging and opioids discouraged. Vanti C et al., Disability and Rehabilitation 2019 (systematic review): walking helped chronic low back pain about as well as other exercise (journal articles, summary)", "search: Foster 2018 Lancet low back pain"),
+    ("Source [66]", "Blanpied PR et al. Neck Pain: Revision 2017, Clinical Practice Guidelines. Journal of Orthopaedic and Sports Physical Therapy 2017; 47(7):A1-A83: exercise (stretching and strengthening), education and, for some people, manual therapy are recommended for neck pain (guideline, summary)", "search: Blanpied 2017 neck pain clinical practice guideline"),
+    ("Source [67]", "Jull G et al. A randomized controlled trial of exercise and manipulative therapy for cervicogenic headache. Spine 2002; 27:1835-1843: exercise and manipulative therapy each reduced the frequency and intensity of headaches that come from the neck, and the benefit lasted at 12 months (journal article, summary)", "search: Jull 2002 cervicogenic headache exercise manipulative therapy"),
+    ("Source [68]", "Cochrane reviews of traction (Graham N et al. on neck pain; Wegner I et al., 2013, on low back pain with or without sciatica) found little clear benefit, from low-quality evidence. Traction should be tried only after a doctor or physiotherapist has checked you (reviews, summary)", "search: Cochrane traction neck pain low back pain"),
+]
+
+def _add_spine(name, g):
+    g = dict(g)
+    T = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    rows = [
+        ("WALK: a short walk every day; walking is one of the best-supported things for a sore back, and it costs nothing [65]", "CHIN TUCKS: 10 slow chin tucks (draw your head straight back, like making a double chin) every few hours at the desk [66]"),
+        ("NECK AND SHOULDER LOOSENING: 2 minutes of slow neck turns and shoulder-blade squeezes; gentle, never into sharp pain [66]", "HIP HINGE: bend from the hips with a straight back to pick things up, not from the waist [45]"),
+        ("WORKSHOP POSTURE: when welding, grinding or working overhead, set the work at elbow height or use a stool or stand so your neck is not craned; change position often [66]", "SLEEP: a pillow that keeps your neck level; if you wake stiff, change your sleeping position or pillow [45]"),
+        ("CORE AND BACK STRENGTH: 10 minutes of bird-dog, side plank and glute bridge, a few slow reps; stop at sharp or radiating pain [65]|Monday", "NECK STRENGTH: gentle holds, pressing your head into your hand for 5 seconds in each direction, 5 times; stop if dizzy or in pain [66]|Thursday"),
+    ]
+    tasks = [
+        T("Prevention A", "Weekly back and neck routine (about 20 minutes)", 7, 0.4, "A walk, chin tucks, neck and shoulder loosening, then core work (bird-dog, side plank, glute bridge). Exercise and staying active are first-line for back and neck pain and work better than rest [65][66]. Start small, add a little each week, and stop at sharp pain, numbness or tingling. Not medical advice. [Strong]", "Me", "Stop at sharp, radiating or worsening pain", 0.0, "None", "Mat"),
+        T("Prevention A", "Monthly workstation and workshop posture check", 30, 0.5, "Desk: screen at eye level, feet flat, chair supports your lower back. Workshop: set welding, grinding and bench work at elbow height; use a stool, stand or lift for heavy or overhead work; keep loads close; do not lift and twist [45][66]. Change position every 30 minutes. [Moderate]"),
+        T("Prevention A", "Monthly neck-headache diary", 30, 0.3, "For a month, note when headaches start, what your neck was doing before (long screen time, welding, sleeping position), and how bad they were. Headaches that start in the neck often respond to exercise and manual therapy [67]. Take the diary to a physiotherapist or doctor. See the red flags below. [Moderate]", "Me", "Seek urgent care for a sudden severe headache, new numbness or weakness, trouble speaking or seeing, fever with back or neck pain, loss of bladder or bowel control, or pain after a fall or injury"),
+        T("Prevention B", "Quarterly: have a physiotherapist or doctor look at recurring back or neck pain", 91, 1.0, "If back or neck pain, or neck-related headaches, keep coming back, get them assessed. Ask what exercises fit you and whether anything else is going on [65][66]. Not medical advice. [Moderate]", "Physiotherapist / doctor"),
+        T("Prevention C", "Yearly: pillow, mattress and chair check", 365, 0.5, "Is your pillow still keeping your neck level? Does the mattress sag? Does your chair still support you? Replace what has worn out [45]. [Moderate]"),
+        T("Prevention C", "Ask about: neck or back traction devices (information only)", 730, 0.3, "Home traction devices (over-door, inflatable collar, lying-down) are sold widely, but Cochrane reviews found little clear benefit, from low-quality evidence [68]. Some people say short sessions feel good. Ask a physiotherapist or doctor before using one, and never use traction after an injury or with numbness, weakness or dizziness. Not medical advice. [Traditional]", "Me", "Never use traction after an injury or with numbness, weakness or dizziness; ask first"),
+    ]
+    g["checklist"] = list(g["checklist"]) + rows
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_SPINE if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity") and any(s in k for s in ("18-39", "40-59", "60-74", "75"))]:
+    SAMPLE_GROUPS[_n] = _add_spine(_n, SAMPLE_GROUPS[_n])
+
+# ---- Encyclopedia layer: back care, stroke awareness, nuts and berries, appreciation, giving time (adult Longevity groups) ----
+_LNG_REFS_ENC = [
+    ("Source [45]", "The Encyclopedia of the Back and Spine Systems and Disorders (reference book): short bed rest only (a day or two) then normal activity; lift with a straight back, bend the knees, keep the load close, no lifting and twisting together; firm mattress and a supportive pillow; change positions; desk slump adds load on neck and shoulders. Paraphrased, not quoted (book)", "library or bookstore"),
+    ("Source [46]", "The Gale Encyclopedia of Neurological Disorders, entry on stroke (reference book): stroke risk rises with age (doubling each decade after 55), high blood pressure, diabetes, atrial fibrillation, smoking, inactivity and heavy drinking; know the warning signs and call 911 at once. Paraphrased, not quoted (book)", "library or bookstore"),
+    ("Source [47]", "Carlsen MH, Halvorsen BL, et al. The total antioxidant content of more than 3100 foods, beverages, spices, herbs and supplements used worldwide. Nutrition Journal 2010; 9:3. A food database: berries, nuts (walnuts highest), dark chocolate and many vegetables are rich in antioxidants. It measures antioxidant content, not health outcomes (open-access paper)", "nutritionj.com"),
+    ("Source [48]", "An Encyclopedia of Small Fruit (reference book): berry and bush fruits for cold climates. Used only as a general guide to growing and choosing berries. Paraphrased (book)", "library or bookstore"),
+    ("Source [49]", "The Encyclopedia of Mental Health (reference book): happiness needs conscious attention and the ability to see beyond disappointment and appreciate life; volunteering and reaching out help with loneliness during life transitions; mental health information is not a substitute for professional care. Paraphrased, not quoted (book)", "library or bookstore"),
+]
+
+def _add_enc(name, g):
+    g = dict(g)
+    if "0-12" in name or "13-17" in name:
+        return g
+    T = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    rows = [
+        ("BREAK UP THE LYING DOWN: after resting your back, get up and walk a few minutes; long bed rest weakens the back [45]", "LIFT SMART: bend your knees, keep the load close, never lift and twist at once [45]"),
+        ("DESK SLUMP CHECK: once an hour, head over shoulders, shoulders back, stand and change position [45]", "APPRECIATION: stop once today and notice something beautiful or something you are grateful for [49]"),
+        ("KNOW THE STROKE WARNING SIGNS|Wednesday: sudden weakness or numbness of face, arm or leg; trouble speaking or seeing; sudden severe headache. Call 911 at once, do not wait [46]", "NUTS AND BERRIES|Wednesday: a handful of walnuts or other nuts, and some berries (saskatoons, blueberries) this week [47][48]"),
+    ]
+    tasks = [
+        T("Prevention A", "Monthly back-care check: mattress, pillow, workstation, lifting habits", 30, 0.5, "Lie on your bed: is it firm enough, is your neck level on the pillow? Check chair height, screen at eye level, feet flat. Practise one lift the safe way. If you often rest your back, keep rests short and follow with a short walk [45]. Not medical advice. Back pain with numbness, weakness or bladder trouble needs a doctor right away. [Moderate]", "Me", "Stop if pain increases; see a doctor for numbness or weakness", 0.0, "None", "Notebook"),
+        T("Prevention A", "Monthly 'give time' check: reach out or volunteer", 30, 1.0, "Once a month give an hour to someone or something: phone a lonely friend, help a neighbour, volunteer. Reaching out is helpful in life transitions such as retirement or loss [49]. [Moderate]", "Me", "None", 0.0, "None", "Notebook"),
+        T("Prevention B", "Quarterly stroke-risk check: blood pressure, weight, smoking, alcohol, activity", 90, 0.5, "Check your blood pressure (home cuff or pharmacy). Note weight, smoking, alcohol (more than two drinks a day raises risk) and weekly activity. Ask your doctor about blood pressure, diabetes and irregular heartbeat. Risk rises with age, doubling each decade after 55 [46]. Not medical advice. Check with your doctor. [Strong]", "Me", "Seek emergency help for stroke signs", 0.0, "None", "Blood pressure cuff"),
+        T("Prevention C", "Yearly: plan a berry patch or buy local berries in season", 365, 2.0, "Choose berries suited to your climate zone (for example saskatoon, haskap, currants on the prairies) and plant or buy them. Freeze extra for winter. Berries and nuts rank high in antioxidant content, but that table measures the food, not your health outcome [47][48]. [Emerging]", "Me", "None", 40.0, "Plants or berries", "Shovel"),
+    ]
+    g["checklist"] = list(g["checklist"]) + rows
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_ENC if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity")]:
+    SAMPLE_GROUPS[_n] = _add_enc(_n, SAMPLE_GROUPS[_n])
+
+# ---- Encyclopedia layer for the younger groups (kids and teens): backpacks, posture, bedroom screens, loud sound, sleep ----
+_LNG_REFS_YOUNG = [
+    ("Source [45]", "The Encyclopedia of the Back and Spine Systems and Disorders (reference book): posture, safe lifting, changing positions, and growing-spine care. Paraphrased, not quoted (book)", "library or bookstore"),
+    ("Source [50]", "The Encyclopedia of the Back and Spine Systems and Disorders, entry on backpack safety (reference book): a backpack should not weigh more than about 10 to 15 percent of the child's body weight; carry it on both shoulders. Paraphrased (book)", "library or bookstore"),
+    ("Source [51]", "Encyclopedia of Children, Adolescents, and the Media (reference book): screens in the bedroom; a Johns Hopkins and Stanford study of 8- and 9-year-olds found lower test scores in children with a TV in the bedroom. Paraphrased (book)", "library or bookstore"),
+    ("Source [52]", "The Five Senses and Beyond: The Encyclopedia of Perception (reference book): sounds under 75 dB do not harm hearing; 85 dB and above can cause hearing loss; headphones can reach about 105 dB and damage hearing within minutes. Paraphrased (book)", "library or bookstore"),
+    ("Source [53]", "Adolescence in America: An Encyclopedia (reference book): younger teens need about 9 to 10 hours of sleep, older teens about 7 to 8, and teens who sleep enough are less drowsy in the day. Paraphrased (book)", "library or bookstore"),
+]
+
+def _add_enc_young(name, g):
+    g = dict(g)
+    T = lambda tab, nm, days, hrs, desc, who="Parent", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+    if "0-12" in name:
+        rows = [
+            ("BACKPACK: weigh it on school days; no more than 10-15% of your child's weight, worn on both shoulders [50]", "SITTING: feet flat, back supported, move every 30 minutes; keep screens at eye level [45]"),
+            ("BEDROOM: no TV, tablet or phone in the bedroom at night [51]|Monday", "LOUD SOUNDS: keep headphone volume low, and give ears a break; loud sound can damage hearing within minutes [52]|Monday"),
+            ("WASH UP: hands washed after the bathroom, before eating and after outdoor play|Tuesday", "LOOK AT THE SKY: 10 minutes outside in daylight, no screens, once a day|Wednesday"),
+        ]
+        tasks = [
+            T("Prevention A", "Monthly backpack, posture and sitting check", 30, 0.3, "Weigh the packed backpack and check it is under 10-15% of body weight. Check both straps are used, heavy items are close to the back, and your child can sit with feet flat. Ask your doctor at checkups whether the spine should be checked in the growth years [45][50]. [Moderate]", "Parent", "None", 0.0, "None", "Bathroom scale"),
+            T("Prevention B", "Twice-yearly bedroom-screen and hearing-safety check", 180, 0.5, "Move screens out of the bedroom at night. Test headphone volume: you should be able to hear someone talking beside you. Sounds at 85 dB and above can cause hearing loss, so use ear protection near loud tools and events [51][52]. [Moderate]", "Parent", "None", 0.0, "Ear protection", "Earplugs"),
+            T("Prevention B", "Concussion plan: know the signs and what to do", 180, 0.4, "After any knock to the head: stop play, watch for headache, vomiting, confusion, sleepiness or unusual behaviour, and see a doctor or call 911 if severe. Keep helmets fitted. Not medical advice. Check with your doctor. [Moderate]", "Parent", "Seek emergency help for severe symptoms", 0.0, "None", "Helmet"),
+        ]
+    else:
+        rows = [
+            ("BACKPACK: keep it under 10-15% of your body weight, both straps on, heavy items close to your back [50]", "BEDROOM: phone and screens out of the bedroom for the night; charge them elsewhere [51]"),
+            ("EARS: keep headphone volume where you can still hear someone next to you; use earplugs at concerts and around loud tools [52]|Monday", "POSTURE: head over shoulders, feet flat, stand and stretch once an hour; strengthen your back and core with your strength work [45]|Monday"),
+            ("SLEEP: younger teens need about 9-10 hours, older teens about 7-8; keep your wake time steady [53]|Sunday", "WASH UP: hands before eating; do not share vapes, bottles or towels|Tuesday"),
+        ]
+        tasks = [
+            T("Prevention A", "Monthly backpack, posture and neck check", 30, 0.3, "Weigh your backpack (under 10-15% of body weight), check posture at your desk, and ask yourself whether your neck or back hurt after screens or bags. Stretch and strengthen your back and core [45][50]. [Moderate]", "Teen", "None", 0.0, "None", "Bathroom scale"),
+            T("Prevention B", "Twice-yearly hearing-protection check", 180, 0.4, "Headphones can reach about 105 dB and damage hearing within minutes; anything 85 dB or above can cause hearing loss. Check volume limits, and keep earplugs for concerts and loud tools [52]. [Moderate]", "Teen", "None", 15.0, "Earplugs", "Earplugs"),
+            T("Prevention B", "Quarterly sleep and bedroom-screen reset", 90, 0.5, "Track sleep for one week. Younger teens need about 9-10 hours, older teens 7-8. Move phones out of the bedroom and keep a steady wake time [51][53]. [Moderate]", "Teen", "None", 0.0, "None", "Notebook"),
+            T("Prevention B", "Concussion plan: know the signs and what to do", 180, 0.4, "After a head knock: stop play, watch for headache, vomiting, confusion or drowsiness, and see a doctor, or call 911 if severe. Keep your helmet fitted. Not medical advice. Check with your doctor. [Moderate]", "Teen", "Seek emergency help for severe symptoms", 0.0, "None", "Helmet"),
+        ]
+    g["checklist"] = list(g["checklist"]) + rows
+    g["tasks"] = list(g["tasks"]) + tasks
+    have = {a[0] for a in g["attrs"]}
+    g["attrs"] = list(g["attrs"]) + [r for r in _LNG_REFS_YOUNG if r[0] not in have]
+    return g
+
+for _n in [k for k in SAMPLE_GROUPS if k.startswith("Longevity") and ("0-12" in k or "13-17" in k)]:
+    SAMPLE_GROUPS[_n] = _add_enc_young(_n, SAMPLE_GROUPS[_n])
+
+# ---- Preparedness: home and family readiness for the prairies (power cuts, blizzards, floods, smoke) ----
+_PREP_NAME = "Preparedness: Home & Family"
+_prep_t = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+SAMPLE_GROUPS[_PREP_NAME] = dict(
+    prefix="PRP",
+    model="Home Preparedness Plan {i}",
+    labels=("People Covered", "Water Stored", "Food Stored", "Heat / Power Backup", "Emergency Contact"),
+    parts=("Water & Food:", "First Aid & Medicines:", "Light, Power & Heat:", "Tools & Fire Safety:", "Documents & Cash:", "Vehicle Kit:"),
+    attrs=[("People covered", "2 adults, 1 pet", "Change to match your home"),
+           ("Plan length", "At least 72 hours, working toward 2 weeks", "Government of Canada advice is 72 hours as a minimum. The longer goal is your choice [39]"),
+           ("Source [39]", "Government of Canada, Get Prepared: 72-hour emergency kit and family emergency plan. Described from general knowledge, not quoted (website: getprepared.gc.ca)", "getprepared.gc.ca"),
+           ("Source [40]", "Prudent Food Storage FAQ (food storage and rotation). Paraphrased, not quoted (document)", "from the document you sent"),
+           ("Source [41]", "Survival Bible (general preparedness reference). Paraphrased, not quoted (book)", "from the book you sent"),
+           ("Source [42]", "Tappan on Survival (general preparedness reference). Paraphrased, not quoted (book)", "from the book you sent"),
+           ("Source [43]", "Preparedness advice varies with your home, health and region. Not medical or legal advice. Check local rules and with your doctor", "n/a")],
+    checklist=[
+        ("Check smoke and carbon monoxide alarm lights are working", "Check flashlight is where it belongs [39]"),
+        ("Phone charged and charger or power bank ready", "Check the car has at least half a tank of fuel in winter [39]"),
+        ("Check the first-aid kit is stocked and easy to reach", "Check you have a few days of your medicines on hand [39]"),
+        ("Check stored water is sealed and in date [39][40]|Monday", "Rotate the oldest food to the front of the shelf [40]|Monday"),
+        ("Walk the house: any water leak, space heater or cord problem?|Tuesday", "Check the furnace filter and the outdoor vents are clear of snow|Tuesday"),
+        ("Check battery lantern, radio and spare batteries work [39]|Wednesday", "Check the winter car kit is in the vehicle (blanket, candle, shovel, jumper cables) [39]|Wednesday"),
+        ("Check you know where the main water shut-off and electrical panel are|Thursday", "Check you know how to use the fire extinguisher|Thursday"),
+        ("Check cash on hand (small bills) and a paper list of key phone numbers [39]|Friday", "Check pet food, litter and any pet medicines for a week [39]|Friday"),
+        ("Check you have a plan to stay warm for 72 hours without power [39]|Sunday", "Talk to your household or a neighbour about one 'what if' [39]|Sunday"),
+    ],
+    tasks=[
+        _prep_t("Prevention A", "Test smoke and carbon monoxide alarms", 30, 0.3, "Press the test button on every alarm. Replace weak batteries. Alarms usually need replacing after about 10 years; check the date on the back. [Strong]", "Me", "Use a stable step stool", 10.0, "Batteries", "Step stool"),
+        _prep_t("Prevention A", "Check and rotate stored food and water", 30, 1.0, "Eat the oldest food first and replace it. Date new items with a marker. Check cans for dents or swelling and throw out any that are damaged. Keep water in clean, sealed food-grade containers; replace it on a schedule you set [39][40]. [Moderate]", "Me", "Throw out swollen or leaking cans", 40.0, "Food, water", "Marker, labels"),
+        _prep_t("Prevention A", "Power-outage test: run the house on the backup plan for an evening", 90, 2.0, "Turn off the main breaker or just use only the backup light and heat for a few hours. Note what you wished you had. Never run a fuel heater, barbecue or generator indoors or in an attached garage; carbon monoxide can kill. [Strong]", "Me", "Carbon monoxide; keep a working CO alarm", 0.0, "None", "Lanterns, radio"),
+        _prep_t("Prevention A", "Review the winter car kit", 30, 0.5, "Blanket, warm clothes, boots, candle and matches in a tin, shovel, jumper cables, flashlight, snacks, water, first-aid kit, phone charger. Check the spare tire. Tell someone your route in bad weather [39]. [Moderate]", "Me", "None", 20.0, "Snacks", "Car kit"),
+        _prep_t("Prevention B", "Check medicines and first-aid kit dates", 90, 0.5, "Replace expired items. Keep a few days of prescriptions on hand if your pharmacy and doctor allow it. Keep a printed list of your medicines and allergies. Not medical advice. Check with your doctor. [Moderate]", "Me", "None", 25.0, "First-aid items", "Notebook"),
+        _prep_t("Prevention B", "Check fire extinguisher, flashlights and batteries", 90, 0.5, "Check the extinguisher gauge is in the green and the pin is in place. Replace flashlight batteries. Keep spares dated. [Strong]", "Me", "None", 15.0, "Batteries", "Flashlight"),
+        _prep_t("Prevention B", "Update the family emergency plan and contact list", 180, 1.0, "Write who to call, where to meet if you can't get home, who has a spare key, and where your documents are. Share it with a neighbour or relative [39]. [Moderate]", "Me", "None", 0.0, "None", "Notebook"),
+        _prep_t("Prevention C", "Yearly: documents, cash and backups", 365, 1.5, "Keep copies of ID, insurance, will and key records in a waterproof pouch or safe, and a digital copy in a second place. Keep a little cash in small bills [39]. [Moderate]", "Me", "None", 10.0, "Folder, pouch", "Scanner"),
+        _prep_t("Prevention C", "Yearly: heating and flood readiness", 365, 2.0, "Have the furnace serviced. Clear eavestroughs and drains before freeze-up. Know the safe way to shut off water, gas and power. Check your insurance covers sewer backup and overland water if that matters where you live. [Moderate]", "Me", "Gas and electrical hazards; call a qualified tradesperson", 150.0, "None", "Ladder"),
+        _prep_t("Prevention C", "Yearly: build up one more day of food and water", 365, 1.0, "Goal: add one day of food and water to your reserve each year until you reach the number of days you want. Store only what you will eat, and rotate it [40]. [Traditional]", "Me", "None", 40.0, "Food, water", "Shelf"),
+        _prep_t("Prevention C", "Yearly: practise one skill (first aid, fire, navigation, cooking without power)", 365, 3.0, "Take a first-aid course, light a fire safely, read a map, or cook a meal on a camp stove outdoors. Skills weigh nothing and are never used up [41][42]. [Traditional]", "Me", "Use a stove outdoors only", 80.0, "None", "Course"),
+    ],
+)
+SAMPLE_GROUPS[_PREP_NAME]["checklist"] = list(SAMPLE_GROUPS[_PREP_NAME]["checklist"])
+
+# ==========================================================================================
+# TOWNS / RMs: one asset for a small town, village or rural municipality.
+# Covers water, sewer and lagoon, electrical, fleet and roads, buildings, and regulatory reminders.
+# The intervals are EXAMPLES based on general practice and on Saskatchewan Water Security Agency guidance
+# (WSA 545 Municipal Drinking Water Quality Monitoring Guidelines, Edition 6). Each system's Permit to Operate can
+# change them, so always follow the permit, the manufacturer's manuals and current Saskatchewan rules.
+# These are reminders only. They are not legal advice and do not say any system meets a rule.
+# ==========================================================================================
+_TWN_NAME = "Towns / RMs"
+_tw = lambda tab, nm, days, hrs, desc, who="Operator", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+SAMPLE_GROUPS[_TWN_NAME] = dict(
+    prefix="TWN",
+    model="Town / RM {i}",
+    units=1,
+    unit_names={1: "Town / RM"},
+    labels=("Population Served", "Water Source", "Sewage System", "Permit to Operate No.", "Lead Operator"),
+    parts=("Water Wells, Treatment & Chlorination:", "Reservoir, Mains, Hydrants & Valves:", "Sewer, Lift Stations & Lagoon:",
+           "Electrical, Panels & Standby Generators:", "Fleet, Roads, Culverts & Public Works:", "Buildings, Arena, Fire Hall & Playgrounds:"),
+    attrs=[("Population served", "1,200 (change to match your town or RM)", "Sampling rules depend on the number of people served"),
+           ("Water source", "Groundwater wells, chlorinated (example)", "Surface or blended sources have stricter sampling [1]"),
+           ("Sewage system", "Gravity sewer, 1 lift station, 2-cell lagoon (example)", "Lagoon release rules are in your Permit to Operate [2]"),
+           ("Permits", "Waterworks and sewage works Permits to Operate", "Keep copies where the operator can find them [3]"),
+           ("Source [1]", "Water Security Agency, WSA 545 Municipal Drinking Water Quality Monitoring Guidelines, Edition 6 (June 2026). Summarised, not quoted (wsask.ca)", "wsask.ca"),
+           ("Source [2]", "Water Security Agency wastewater page and documents it lists: EPB 310 two-cell lagoon O&M, EPB 338 compliance monitoring, EPB 267 upset reporting, WSA 531 monitoring wells (wsask.ca)", "wsask.ca"),
+           ("Source [3]", "Water Security Agency drinking water page and documents it lists: WSA 523 permit, EPB 258 monthly records review, EPB 536 annual consumer notice, EPB 540 emergency response planning, EPB 505 adverse results (wsask.ca)", "wsask.ca"),
+           ("Source [4]", "Government of Saskatchewan, municipal financial reporting: audited statements due July 1 (cities September 1) (saskatchewan.ca)", "saskatchewan.ca"),
+           ("Source [5]", "General municipal practice (hydrants, valves, generators, fleet, playgrounds). Intervals are examples. Follow your manuals and local rules. Not legal advice", "n/a")],
+    checklist=[
+        ("Read free chlorine at the water plant outlet and write it down [1]", "Check turbidity and the water looks clear [1]"),
+        ("Check wells, pumps and reservoir level: anything running too long or alarming?", "Check chlorine feed pump and chlorine supply"),
+        ("Check the lift station: pumps cycling, no alarm, wet well level normal", "Walk the lagoon fence, gate and inlet: anything unusual? [2]"),
+        ("Check the standby generator has fuel and shows no fault", "Check heat and lights at the water plant, fire hall and town office"),
+        ("Check town trucks, grader and mower: fuel, fluids and lights", "Any hazards on the streets, sidewalks or playground today?"),
+        ("Take the weekly bacteriological sample and send it to the lab [1]|Monday", "Read free and total chlorine at the same spot as the sample [1]|Monday"),
+        ("Walk the hydrants and valve boxes: snow, damage or leaks?|Tuesday", "Check the reservoir hatch, vents and screens are secure|Tuesday"),
+        ("Run the standby generator for 15 to 30 minutes|Wednesday", "Check emergency lights and exit signs in the hall and arena|Wednesday"),
+        ("Check the lagoon dikes, burrowing animals and water level [2]|Thursday", "Check the sewer lift station float switches and alarm light|Thursday"),
+        ("Check the bulk water station and meters for leaks or damage|Friday", "Write the week's water and sewer notes in the operator log|Friday"),
+        ("Check that today's calendar has no sampling or reporting due [1][3]|Monday", "Check phone numbers for the WSA and the lab are posted [3]|Monday"),
+    ],
+    tasks=[
+        # ----- Prevention A: monthly routines -----
+        _tw("Prevention A", "Monthly review of waterworks operating records", 30, 2.0, "Review the month's records: chlorine, turbidity, pump hours, alarms and sample results. Sign and file them. This matches the WSA's monthly review of operational records (EPB 258). Check your Permit to Operate for exact requirements [3].", "Qualified waterworks operator", "None", 0.0, "None", "Operator log"),
+        _tw("Prevention A", "Check chlorine supply and feed pump", 14, 0.5, "Count chlorine on hand and order more before you run low. Check the feed pump, tubing and injection point for leaks or wear.", "Qualified waterworks operator", "Chlorine hazard: ventilate, wear gloves and eye protection", 40.0, "Chlorine, tubing", "PPE, spare tubing"),
+        _tw("Prevention A", "Run backup generator under load and log it", 30, 1.0, "Run the standby generator for at least 30 minutes with the load on. Check fuel, oil, coolant, battery, transfer switch and exhaust. Log hours.", "Electrician or operator", "Carbon monoxide; keep doors open", 30.0, "Fuel, oil", "Log book"),
+        _tw("Prevention A", "Lift station pump run, float and alarm test", 30, 1.5, "Check both pumps run in turn, float switches work and the high-level alarm sounds and calls out. Look for grease, rags and odours.", "Utility operator", "Confined space: never enter the wet well without proper training and equipment", 20.0, "None", "Hand tools, gloves"),
+        _tw("Prevention A", "Lagoon walk-around: dikes, inlet, outlet and fence", 30, 1.0, "Look for erosion, burrowing animals, cattails and trees on the dikes, blocked inlet or outlet, and damaged fences or signs. Note levels. See the two-cell lagoon guide (EPB 310) [2].", "Utility operator", "Slippery slopes and deep water", 0.0, "None", "Gauge, camera"),
+        _tw("Prevention A", "Hydrant and valve box visual check", 30, 1.5, "Walk the hydrants and valve boxes. Clear snow and weeds. Note leaks, damage and hydrants that are hard to find.", "Public works", "Traffic and lifting hazards", 0.0, "None", "Shovel, hydrant wrench"),
+        _tw("Prevention A", "Emergency lights, exit signs and extinguisher tags", 30, 1.0, "In the town office, hall, arena and fire hall: press the test button on emergency lights, check exit signs and extinguisher gauges, pins and tags.", "Facility staff", "None", 10.0, "Batteries, tags", "Ladder"),
+        _tw("Prevention A", "Fleet check: trucks, grader, mower, plow", 30, 2.0, "Check fluids, tires, lights, brakes, belts, blades and cutting edges. Grease fittings. Record meter readings.", "Mechanic or public works", "Parking brake and wheel chocks", 60.0, "Grease, oil, filters", "Grease gun, hand tools"),
+        _tw("Prevention A", "Playground and skate park inspection (in season)", 30, 1.0, "Check for loose bolts, broken parts, sharp edges, cracked surfacing and hazards on swings, slides and climbing equipment. Remove or fence off anything unsafe. Keep a dated log. Playground guidance in Canada follows the CSA standard for playgrounds.", "Public works", "Close any equipment that is unsafe", 20.0, "Hardware", "Checklist"),
+        _tw("Prevention A", "Bulk water station, meters and curb stops check", 30, 1.0, "Check the bulk water fill station, meters and any known leaking curb stops. Compare water pumped to water billed and look for losses.", "Utility operator", "None", 0.0, "None", "Meter log"),
+        # ----- Prevention B: quarterly or twice a year -----
+        _tw("Prevention B", "Quarterly valve exercising (one quarter of the valves each time)", 90, 4.0, "Operate one quarter of the main valves fully open and closed, count turns and log any that are stuck or damaged. Over the year every valve gets exercised (general practice).", "Public works", "Traffic control; watch for water hammer", 30.0, "Grease", "Valve key, exerciser"),
+        _tw("Prevention B", "Quarterly trihalomethane (THM) sampling reminder (if your permit requires it)", 90, 1.0, "Under WSA 545, surface, blended and some groundwater systems have THM sampling rules; for surface systems serving under 5,000 people it is quarterly. Check your Permit to Operate and the table in WSA 545 for your system [1].", "Qualified waterworks operator", "None", 60.0, "Sample bottles", "Cooler"),
+        _tw("Prevention B", "Quarterly safety meeting and toolbox talk", 90, 1.0, "Hold a short safety meeting with the crew: confined spaces, chlorine, trenching, traffic control, lifting. Write down who attended.", "Safety lead or CAO", "None", 0.0, "None", "Sign-in sheet"),
+        _tw("Prevention B", "Well pump, booster pump and motor check", 180, 2.0, "Check amps, vibration, noise, seals and leaks. Compare with last readings. Check pump start/stop controls.", "Qualified waterworks operator", "LOTO", 40.0, "Grease, seals", "Amp meter"),
+        _tw("Prevention B", "Lagoon spring and fall inspection and release planning", 180, 3.0, "After thaw and before freeze-up, inspect the lagoon, record depth and plan any release. Release, sampling and reporting rules are in your Permit to Operate and the Saskatchewan Environmental Code. Notify the WSA when and how the permit says to [2].", "Utility operator", "Never release without checking the permit", 0.0, "None", "Sample bottles, depth gauge"),
+        _tw("Prevention B", "Electrical panel visual and thermal check", 180, 2.0, "Look for heat marks, loose lugs, noise or corrosion in panels at the wells, lift station, hall and arena. A thermal camera helps. A licensed electrician does the work inside panels.", "Licensed electrician", "Electrical hazard, qualified person only", 80.0, "None", "Thermal camera"),
+        _tw("Prevention B", "Culvert, road and ditch inspection (spring and fall)", 180, 4.0, "Check culverts, approaches, ditches and bridges for blockage, washouts and damage. Note priorities for the grader and the budget. Especially important for RMs.", "Public works", "Traffic; ice and high water", 0.0, "None", "Camera, shovel"),
+        _tw("Prevention B", "Fire hall: truck pump check and hose test", 180, 4.0, "Run the pump, check pressure, hoses, nozzles and tank. Check SCBA and tools. Log results for the fire chief.", "Fire chief", "Fire hall safety", 100.0, "Fuel, hose", "Pump log"),
+        # ----- Prevention C: yearly or longer -----
+        _tw("Prevention C", "Yearly hydrant flushing and flow test", 365, 16.0, "Flush each hydrant, check flow and pressure, look for broken parts, leaks and drains. Notify residents before flushing. Flush at a time that avoids freezing and dirty water complaints (general practice).", "Public works", "Traffic control; hot or cold weather", 150.0, "Gaskets, grease", "Hydrant wrench, pitot gauge"),
+        _tw("Prevention C", "Yearly reservoir and clearwell inspection", 365, 6.0, "Inspect the reservoir roof, hatches, vents and screens, overflow, ladder and coating from outside. Plan cleaning and a full inspection every few years with trained, equipped people.", "Qualified waterworks operator", "Confined space: do not enter without proper training and rescue", 100.0, "None", "Flashlight, camera"),
+        _tw("Prevention C", "Yearly backflow preventer testing", 365, 4.0, "Test backflow preventers on the arena, hall, plant, bulk fill and any commercial connections. Keep the test records. Check the local requirements for who may test.", "Qualified backflow tester", "None", 200.0, "Seals, kits", "Test kit"),
+        _tw("Prevention C", "Yearly generator service and full-load test", 365, 6.0, "Change oil and filters, check coolant and batteries, and run a full-load test (load bank if needed). Check the transfer switch. Test fuel quality.", "Electrician", "LOTO; carbon monoxide", 400.0, "Oil, filters, fuel", "Load bank"),
+        _tw("Prevention C", "Yearly electrical thermal scan and breaker check", 365, 6.0, "Thermal scan of main panels, motor controls and transformers. Tighten connections and replace parts that are overheating.", "Licensed electrician", "Electrical hazard, qualified person only", 300.0, "None", "Thermal camera"),
+        _tw("Prevention C", "Fall freeze-up prep: hydrants, lines, heat tape and plow gear", 365, 8.0, "Before winter: check heat tape and insulation on exposed pipes, drain hydrants as needed, service the plow, sander and snowblower, stock salt and sand.", "Public works", "Cold-weather and ladder safety", 400.0, "Salt, sand, blades", "Hand tools"),
+        _tw("Prevention C", "Yearly fleet service: grader, trucks, mower", 365, 16.0, "Full service: oil, filters, hydraulic fluid, cutting edges and brakes. Check steering and tires. Replace parts before they fail.", "Mechanic", "LOTO and blocking", 1500.0, "Oil, filters, edges", "Shop tools"),
+        _tw("Prevention C", "Arena refrigeration, boiler and pressure vessel inspection check", 365, 4.0, "Check that arena refrigeration, boilers and pressure vessels are inspected as the Technical Safety Authority of Saskatchewan (TSASK) requires. Confirm the dates and keep the paperwork. Check with TSASK for what applies to you.", "Facility manager", "Ammonia and pressure hazards: qualified people only", 500.0, "None", "Inspection paperwork"),
+        _tw("Prevention C", "Yearly extinguisher service, SCBA and fire pump test", 365, 6.0, "Service extinguishers and SCBA, and run the annual pump test on fire trucks. Keep dated records.", "Fire chief and service company", "None", 400.0, "Tags, agent", "Service kit"),
+        _tw("Prevention C", "Yearly detailed playground inspection", 365, 3.0, "Do a detailed check, including surfacing depth, footings and fasteners. Repair or remove anything unsafe. File the report.", "Public works", "Close unsafe equipment", 100.0, "Surfacing, hardware", "Checklist"),
+        _tw("Prevention C", "Update the asset list, condition notes and replacement years", 365, 4.0, "Update your list of pipes, pumps, vehicles and buildings with condition and expected replacement year. It feeds the budget and any grant application.", "CAO", "None", 0.0, "None", "This program"),
+        # ----- Compliance: reminders for rules and reports -----
+        _tw("Compliance", "Audited financial statements to Government Relations (due July 1)", 365, 6.0, "Municipalities other than cities must submit audited financial statements and the auditor's report to the Ministry of Government Relations by July 1 (cities by September 1). Appoint the auditor early. Check saskatchewan.ca for any change [4].", "CAO", "None", 0.0, "None", "Audit package"),
+        _tw("Compliance", "Annual Notification to Consumers on drinking water", 365, 2.0, "The WSA provides guidelines and templates (EPB 536) for the annual notice to water users. Prepare it and send it as your permit and the guideline say [3].", "CAO and operator", "None", 50.0, "Printing", "Template"),
+        _tw("Compliance", "Review the sampling plan against your Permit to Operate and WSA 545", 365, 2.0, "WSA 545 sets minimum frequencies by population and source: for example, bacteriological sampling is weekly for groundwater systems serving 501 to 2,000 people, and free chlorine should be read daily at the entry to the distribution system. Your permit can change these. Confirm the plan each year [1].", "Qualified waterworks operator", "None", 0.0, "None", "WSA 545"),
+        _tw("Compliance", "General chemical and health/toxicity sampling reminder", 365, 1.0, "For groundwater systems serving up to 5,000 people, WSA 545 lists general chemical and health/toxicity sampling as every 2 years (every year for surface sources serving 501 to 5,000). Check the table and your permit, then schedule the lab [1].", "Qualified waterworks operator", "None", 400.0, "Sample bottles", "Cooler"),
+        _tw("Compliance", "Lead and copper sampling reminder", 365, 2.0, "WSA 545 asks for routine lead and copper sampling at least once a year, starting with homes with lead service lines, plus schools and daycares. Reduced sampling is possible under conditions in the document. Check it and your permit [1].", "Qualified waterworks operator", "None", 200.0, "Sample bottles", "Sampling kit"),
+        _tw("Compliance", "Check operator qualifications and renewals", 365, 1.0, "Confirm every operator's certification level, expiry and any training needed, using the Saskatchewan Operator Certification Board. Keep copies on file [2][3].", "CAO", "None", 0.0, "None", "Operator files"),
+        _tw("Compliance", "Check Permit to Operate conditions, renewals and amendments", 365, 2.0, "Read your waterworks and sewage works Permits to Operate (WSA 523 and WSA 524 are the forms for changes). Note conditions, deadlines and changes you plan, such as new wells or a lagoon upgrade [2][3].", "CAO and operator", "None", 0.0, "None", "Permits"),
+        _tw("Compliance", "Review and update the emergency response plan and contact list", 365, 3.0, "Review the waterworks emergency response plan (EPB 540 and the template EPB 541B), the boil water advisory steps and the WSA emergency and upset contact list (EPB 365). Practise the phone tree [3].", "CAO and operator", "None", 0.0, "None", "ERP binder"),
+        _tw("Compliance", "Lagoon sampling, release records and annual wastewater reporting", 365, 4.0, "Collect lagoon sampling and release records and report as your Permit to Operate says. Check the Saskatchewan Environmental Code and WSA compliance monitoring guidance (EPB 338). Keep upset reports (EPB 267) [2].", "Utility operator and CAO", "None", 300.0, "Sample bottles", "Lab"),
+        _tw("Compliance", "Groundwater monitoring wells at the lagoon: sampling reminder (if required)", 365, 3.0, "If your permit requires monitoring wells at the sewage works, sample them as WSA 531 describes and file the results [2].", "Utility operator", "None", 250.0, "Sample bottles", "Sampling pump"),
+        _tw("Compliance", "Check what is due: sampling, reports, inspections and permits", 365, 2.0, "Once a year, list every report, sample, inspection and permit renewal due in the next 12 months and put the dates on the calendar. Rules change, so confirm with the WSA at 1-866-727-5420 and with Government Relations. This is a reminder, not legal advice [1][3][4].", "CAO", "None", 0.0, "None", "Calendar"),
+    ],
+)
+SAMPLE_GROUPS[_TWN_NAME]["checklist"] = list(SAMPLE_GROUPS[_TWN_NAME]["checklist"])
 
 FULL_CATEGORIES_LIST = []
 DEFAULT_CATEGORY_LABELS = {}
@@ -767,6 +1600,172 @@ def _register_group(name, g):
             rows.append(tuple(t))
     CATEGORY_TASK_TEMPLATES[name] = rows
 
+
+# ---- Split the child plan into two age bands: 0-5 (intensive, parent-led) and 6-12 (growing independence) ----
+# Built from the finished "Longevity 0-12 Kids" group (all add-on layers already applied), so nothing is lost. 00-05 and 06-12 are
+# zero-padded so the groups sort in age order (A-Z) next to 13-17, 18-39 ...
+_K_EARLY = "Longevity 00-05 Early Years"
+_K_KIDS = "Longevity 06-12 Kids"
+def _split_kids_group():
+    k = SAMPLE_GROUPS.pop("Longevity 0-12 Kids")
+    rows, tasks = list(k["checklist"]), list(k["tasks"])
+    def pick(idx): return [rows[i] for i in idx]
+    # ---- 0-5: every day, parent-led ----
+    early_rows = [
+        ("SAFETY: car seat fitted right every trip, harness snug; seat belt on", rows[0][1]),
+        ("SLEEP: babies 0-3 mo 14-17 h, 4-11 mo 12-16 h, 1-2 yrs 11-14 h, 3-4 yrs 10-13 h [1]", rows[1][1]),
+        ("MOVE: ages 1-4, 3 hours of any play across the day, some of it energetic; ages 5, 60 minutes of hard-enough-to-puff play [1][2]", rows[2][1]),
+        rows[3],
+        ("SCREENS: none under 2; no more than 1 hour at ages 2-4; none at meals or in bedrooms at night [1][5]", rows[4][1]),
+        rows[5],
+        rows[6],
+        rows[7], rows[8], rows[9], rows[10],
+        ("SKILLS: one small job (put toys in the bin, help set the table), from about age 2-3", "ROUTINE: same meal, nap, bath and bedtime pattern each day; tell them what comes next"),
+        ("WATCH and LOG: if the public health nurse asked, note feeds, wet diapers and sleep; call 811 if you are worried", "DEVELOPMENT: notice first smiles, words, steps and play; write down any worry about speech, movement or behaviour to ask the nurse"),
+        ("Check crib, high chair, car seat straps and stair gates are safe and tight|Sunday", "Crawl the floor: small objects, cords, button batteries and magnets out of reach|Sunday"),
+    ] + pick([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 26, 28, 29])
+    early_tasks = [tasks[i] for i in (0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 16, 17)] + [t for t in tasks[18:] if t[1] not in (
+        "Monthly backpack, posture and sitting check", "Concussion plan: know the signs and what to do", "Monthly 'sharpen the saw' family check")]
+    early_tasks.append(("Prevention A", "Monthly milestone and worry check", 30, 0, 0.3,
+        "Look at what your child can do now (smiling, sitting, walking, words, play) and write down anything that worries you, in any area. Bring the list to the next nurse or doctor visit and ask about developmental screening. Not medical advice. [Moderate]",
+        "Parent", "None", 0.0, "None", "Notebook"))
+    # ---- 6-12: fewer daily prompts, more independence ----
+    kid_rows = [
+        ("SAFETY: booster seat until the seat belt fits right (check the seat maker's limits); seat belt on every trip", "SAFETY: know your name, address, a parent's phone number and who to ask for help"),
+        ("SLEEP: 9-11 hours at ages 5-12; same bedtime and wake time [2]", rows[1][1]),
+        ("MOVE (sweat): 60 minutes a day of hard-enough-to-puff play or sport [2]", rows[2][1]),
+        ("SCREENS: no more than 2 hours of fun screen time a day; none at meals or in bedrooms at night [2][5]", rows[4][1]),
+        ("FOOD: eat together at the table, no screens; vegetables or fruit at each meal; water and milk; limit juice, sugary drinks, chips and sweets [9]", "FOOD: let them help choose and make a meal or snack; water in the school bottle [9]"),
+        ("TEETH: brush twice a day for 2 minutes with fluoride toothpaste (pea size); an adult helps until about age 8 [4]", rows[6][1]),
+        rows[7], rows[8], rows[9],
+        ("SAFETY: helmet on bike, scooter, skates and sleds; an adult watching near water until they swim well", "SAFETY: medicines and cleaners locked or out of reach of younger children; hot water 49 C or less"),
+        rows[11],
+    ] + pick([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29])
+    kid_tasks = [tasks[i] for i in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 15, 16, 17)] + list(tasks[18:])
+    kid_tasks.append(("Compliance", "Check the vaccine record and catch up", 365, 0, 0.5,
+        "At the yearly checkup, ask the nurse to compare the record with the Saskatchewan schedule [3] and book anything missed. [Strong]",
+        "Parent / Public health nurse", "None", 0.0, "None", "Vaccine record"))
+    early = dict(k, prefix="L00", model="Longevity Plan 0-5 {i}", unit_names={1: "My Child (0-5)"}, checklist=early_rows, tasks=early_tasks)
+    older = dict(k, prefix="L06", model="Longevity Plan 6-12 {i}", unit_names={1: "My Child (6-12)"}, checklist=kid_rows, tasks=kid_tasks)
+    SAMPLE_GROUPS[_K_EARLY] = early
+    SAMPLE_GROUPS[_K_KIDS] = older
+_split_kids_group()
+
+# ==========================================================================================
+# PERSONAL DEVELOPMENT groups (category "Longevity and Awareness"): Habits, Goals, Relationships, Skills.
+# Each unit is one habit, goal, person or skill. Tasks are reminders for self-reflection and practice, not medical advice.
+# ==========================================================================================
+_pd_t = lambda tab, nm, days, hrs, desc, who="Me", safety="None", cost=0.0, cons="None", tools="None": (tab, nm, days, 0, hrs, desc, who, safety, cost, cons, tools)
+
+SAMPLE_GROUPS["Habits"] = dict(
+    prefix="HAB",
+    model="Habit {i}",
+    units=3,
+    unit_names={1: "Habit: daily walk", 2: "Habit: nightly review", 3: "Habit: morning pause"},
+    labels=("Habit", "Tiny Version (week one)", "Full Version", "Start Date", "My Reward"),
+    parts=("Cue (after I...):", "Tiny Version:", "Full Version:", "Reward:", "Tracking:", "Support:"),
+    attrs=[("Habit", "Daily walk (change to your own)", "One unit per habit. Two at a time is plenty"),
+           ("Plan", "After I finish breakfast, I will put on my shoes and step outside", "A habit tied to something you already do is easier to keep [3]"),
+           ("Source [1]", "Lally P, van Jaarsveld CHM, Potts HWW, Wardle J. How are habits formed: modelling habit formation in the real world. European Journal of Social Psychology 2010; 40:998-1009. Habits took a median of 66 days to become automatic, with a wide range (18 to 254 days), and missing one day did not materially hurt the process (journal article, summary)", "search: Lally 2010 habit formation 66 days"),
+           ("Source [2]", "B.F. Skinner's work on reinforcement: rewarding every time to start a behavior, then only some of the time, keeps it going (general knowledge, paraphrased; see the Philosophy page)", "n/a"),
+           ("Source [3]", "BJ Fogg, Tiny Habits (2019): make the habit tiny and anchor it to an existing routine. Peter Gollwitzer's research on if-then 'implementation intentions' (1999 and later reviews) found that specific plans improve follow-through. Paraphrased in our own words (books and journal articles, summary)", "library or bookstore"),
+           ("Source [4]", "Stephen R. Covey, The 7 Habits of Highly Effective People, paraphrased in our own words. Not medical advice", "library or bookstore")],
+    checklist=[
+        ("Do today's tiny version of each habit and tick it off [3]", "Tie each habit to something you already do: 'After I X, I will Y' [3]"),
+        ("Feel like skipping? Do the two-minute version instead [3]", "Missed a day? Just do today's. One miss does not undo a habit [1]"),
+        ("Weekly review: which habit is easiest, which is hardest? Make the hard one smaller|Sunday", "Kept a habit all week? Roll the dice for a reward (Philosophy page) [2]|Sunday"),
+    ],
+    tasks=[
+        _pd_t("Prevention A", "Weekly habit review", 7, 0.3, "Look back over the week. Which habits did you do, which did you skip, and why? Make the hardest one smaller, or move it to a better time. Reward yourself for what you kept [2][3]. [Moderate]"),
+        _pd_t("Prevention A", "Monthly review with a thinking partner (optional)", 30, 0.5, "Once a month, sit down with a thinking partner (a friend, a mentor, a counsellor or an AI) and review the month. Bring your habit counts, your strengths chart and your goals, and use the Monthly review prompt on the Philosophy page (Talk it over). Ask: what patterns do you see, what should I keep, shrink or drop, and what am I not seeing? Ask it to push back and disagree. Do not paste Private journal text into any online service. Take the advice as input, not a verdict, and finish with one real action, ideally involving a real person. Optional: skip a month if you like. Finish with a reward from your six joys. [Emerging]"),
+        _pd_t("Prevention A", "Monthly: keep, shrink, swap or retire a habit", 30, 0.4, "Habits take about two months on average to settle, with a wide range [1]. After a month, ask whether this habit is still worth it. Keep it, make it smaller, swap it, or retire it. Two habits at a time is plenty. [Moderate]"),
+        _pd_t("Prevention B", "Two-month check: is it automatic yet?", 60, 0.3, "On about day 60 ask whether you do it without deciding to. If yes, it can run on its own and you can start another. If not, keep going; the range is wide, and one slip does not erase progress [1]. [Moderate]"),
+        _pd_t("Prevention C", "Yearly habit clean-out", 365, 1.0, "List the habits you have now. Which ones make your life better? Keep those, drop the rest, and choose one new one for the year, thinking about the person you want to be [4]. [Moderate]"),
+    ],
+)
+
+SAMPLE_GROUPS["Goals"] = dict(
+    prefix="GOL",
+    model="Goal {i}",
+    units=2,
+    unit_names={1: "Goal: finish the project I care about", 2: "Goal: a health goal for this year"},
+    labels=("Goal", "Why It Matters", "Target Date", "Next Step", "Who Helps"),
+    parts=("Why:", "Plan:", "First Next Step:", "Obstacles:", "Support:", "Review:"),
+    attrs=[("Goal", "One clear goal (change to your own)", "One unit per goal. Specific goals work better than vague ones [1]"),
+           ("Obstacle plan", "If it is raining, then I will do the indoor version", "If-then plans help people follow through [2]"),
+           ("Source [1]", "Locke EA, Latham GP. Building a practically useful theory of goal setting and task motivation. American Psychologist 2002; 57:705-717. Specific, challenging goals with feedback tend to lead to better performance than vague 'do your best' goals (journal article, summary)", "search: Locke Latham goal setting theory 2002"),
+           ("Source [2]", "Peter Gollwitzer, implementation intentions (if-then plans), and Gabriele Oettingen, 'mental contrasting' (WOOP: wish, outcome, obstacle, plan), Rethinking Positive Thinking (2014). Picturing the obstacle along with the goal tends to help more than positive fantasy alone. Paraphrased (journal articles and book, summary)", "library or bookstore"),
+           ("Source [3]", "Stephen R. Covey, The 7 Habits: begin with the end in mind; put first things first. Paraphrased in our own words (book). Not financial, legal or medical advice", "library or bookstore"),
+           ("Source [4]", "Edward de Bono, Lateral Thinking (1970) and Six Thinking Hats (1985): deliberate sideways moves (random entry, provocation, challenging assumptions) to find new ideas. Widely taught; controlled research is thin, so treat it as a toolkit (books, summary)", "library or bookstore")],
+    checklist=[
+        ("Write the one next step for each goal and do it first thing today [3]", "Name the biggest obstacle and make an if-then plan: 'If X happens, I will Y' [2]"),
+        ("Weekly: is each goal still moving? What is the next step this week?|Sunday", "Weekly: pick the three most important things, schedule them first, say no to the rest [3]|Sunday"),
+    ],
+    tasks=[
+        _pd_t("Prevention A", "Weekly goal review", 7, 0.4, "For each goal: what did I do this week, what is the next step, what could get in the way (WOOP: wish, outcome, obstacle, plan) [2]? Put the next step in your calendar. [Moderate]"),
+        _pd_t("Prevention A", "Monthly review with a thinking partner (optional)", 30, 0.5, "Once a month, sit down with a thinking partner (a friend, a mentor, a counsellor or an AI) and review the month. Bring your habit counts, your strengths chart and your goals, and use the Monthly review prompt on the Philosophy page (Talk it over). Ask: what patterns do you see, what should I keep, shrink or drop, and what am I not seeing? Ask it to push back and disagree. Do not paste Private journal text into any online service. Take the advice as input, not a verdict, and finish with one real action, ideally involving a real person. Optional: skip a month if you like. Finish with a reward from your six joys. [Emerging]"),
+        _pd_t("Prevention A", "Monthly progress check", 30, 0.5, "Compare progress with the target date. Break big goals into steps small enough to finish in a week. Adjust the plan, not just the effort [1]. [Moderate]"),
+        _pd_t("Prevention A", "Monthly: think sideways about a stuck goal", 30, 0.4, "Pick the goal that is stuck. Use the Think sideways box on the Philosophy page: a random word, a provocation, or the six thinking hats. List ten alternatives before choosing one, then sleep on it. A toolkit, not a guarantee [4]. [Traditional]"),
+        _pd_t("Prevention B", "Quarterly: is this still my goal?", 91, 0.8, "Ask whether the goal still matters to you. Drop it, change it, or double down. Letting go of a goal that no longer fits is a healthy choice, not a failure. [Moderate]"),
+        _pd_t("Prevention C", "Yearly: write next year's goals", 365, 1.5, "Begin with the end in mind [3]: who do you want to be in a year? Choose a few specific goals, one in each of body, mind, relationships and meaning. Write a first step for each. [Moderate]"),
+    ],
+)
+
+SAMPLE_GROUPS["Relationships"] = dict(
+    prefix="REL",
+    model="Relationship {i}",
+    units=3,
+    unit_names={1: "Person: my closest person", 2: "Person: a parent or elder", 3: "Person: a close friend"},
+    labels=("Person", "How We Connect", "Important Dates", "Last Real Conversation", "One Thing They Love"),
+    parts=("Time Together:", "Listening:", "Appreciation:", "Repair:", "Shared Plans:", "Boundaries:"),
+    attrs=[("Person", "A person who matters to you (use a first name or a role; this stays on your own computer)", "One unit per person. Sample data uses roles, not real people"),
+           ("Safety", "If a relationship makes you feel unsafe, contact a local support service, a doctor or a counsellor. In an emergency call 911", "Not therapy, legal or medical advice"),
+           ("Source [1]", "Holt-Lunstad J, Smith TB, Layton JB. Social relationships and mortality risk: a meta-analysis. PLoS Medicine 2010; 7(7):e1000316. Across 148 studies (more than 300,000 people), stronger social relationships were linked with about a 50% greater likelihood of survival. An association, not proof of cause (journal article, summary)", "search: Holt-Lunstad 2010 social relationships mortality"),
+           ("Source [2]", "Waldinger R, Schulz M. The Good Life (2023), on the Harvard Study of Adult Development: the quality of close relationships was among the strongest predictors of health and happiness in later life. Paraphrased (book)", "library or bookstore"),
+           ("Source [3]", "Stephen R. Covey, The 7 Habits: think win-win; seek first to understand, then to be understood. Paraphrased in our own words (book)", "library or bookstore")],
+    checklist=[
+        ("Listen to one person today until they feel understood, before you give your view [3]", "Tell one person one thing you appreciate about them"),
+        ("Real conversation with someone close this week: in person or by phone, not just a text|Wednesday", "Plan something to do together this week, even something small|Saturday"),
+        ("Weekly: who have I not spoken with lately? Reach out|Sunday", "Any birthday or anniversary coming up? Plan early|Sunday"),
+    ],
+    tasks=[
+        _pd_t("Prevention A", "Weekly real conversation with someone close", 7, 0.5, "Call or meet, and listen more than you talk. Close relationships are linked with better health and longer life, though that is an association, not proof of cause [1][2]. [Moderate]"),
+        _pd_t("Prevention A", "Weekly appreciation", 7, 0.1, "Tell someone one specific thing you value about them. Specific beats general. [Moderate]"),
+        _pd_t("Prevention A", "Monthly review with a thinking partner (optional)", 30, 0.5, "Once a month, sit down with a thinking partner (a friend, a mentor, a counsellor or an AI) and review the month. Bring your habit counts, your strengths chart and your goals, and use the Monthly review prompt on the Philosophy page (Talk it over). Ask: what patterns do you see, what should I keep, shrink or drop, and what am I not seeing? Ask it to push back and disagree. Do not paste Private journal text into any online service. Take the advice as input, not a verdict, and finish with one real action, ideally involving a real person. Optional: skip a month if you like. Finish with a reward from your six joys. [Emerging]"),
+        _pd_t("Prevention A", "Monthly: who have I neglected, and is there something to repair?", 30, 0.5, "Think of people you have not been in touch with. Is there an apology, a thank-you or an overdue call? Repair early, while it is small [3]. [Moderate]"),
+        _pd_t("Prevention B", "Quarterly: plan time together", 91, 0.5, "Book a meal, trip, walk, game night or visit with someone who matters. Put it in the calendar now, or it will not happen. [Moderate]"),
+        _pd_t("Prevention C", "Yearly: dates and people", 365, 0.8, "Update birthdays, anniversaries and anyone new in your life. Decide who you want to spend more time with this year, and who may need a boundary. [Moderate]", "Me", "If a relationship feels unsafe, contact a support service"),
+    ],
+)
+
+SAMPLE_GROUPS["Skills"] = dict(
+    prefix="SKL",
+    model="Skill {i}",
+    units=2,
+    unit_names={1: "Skill: a craft (welding, music, writing)", 2: "Skill: a language or a subject"},
+    labels=("Skill", "Current Level", "Practice Goal", "Teacher or Resource", "Next Milestone"),
+    parts=("Practice:", "Feedback:", "Equipment & Safety:", "Learning Resources:", "Milestones:", "Rest & Recovery:"),
+    attrs=[("Skill", "A skill you want to build (change to your own)", "One unit per skill"),
+           ("Practice plan", "Three sessions a week of 20 minutes, aimed at one small weak spot", "Short, focused practice beats long, vague sessions [1]"),
+           ("Source [1]", "Ericsson KA, Krampe RT, Tesch-Roemer C. The role of deliberate practice in the acquisition of expert performance. Psychological Review 1993; 100:363-406: focused practice aimed at weak spots, with feedback, is how skills grow. Later work (Macnamara et al., Psychological Science 2014) found practice explains much, but only part, of the differences between people. The '10,000 hours' rule is a popular simplification (journal articles, summary)", "search: Ericsson deliberate practice 1993"),
+           ("Source [2]", "Mihaly Csikszentmihalyi, Flow (1990): enjoyment is highest when the challenge slightly stretches your skill. Rollo May, The Courage to Create: absorbed engagement with the work itself (encounter). Paraphrased (books)", "library or bookstore"),
+           ("Source [3]", "Safety gear and tool care follow each tool's manual and local rules. Not professional advice", "n/a"),
+           ("Source [4]", "Howard Gardner, Frames of Mind (1983): several kinds of intelligence (linguistic, logical-mathematical, spatial, musical, bodily-kinesthetic, interpersonal, intrapersonal; later naturalist). Used here only as a lens for noticing strengths, not a test: many psychologists doubt the intelligences are separate, measurable abilities (book, summary)", "library or bookstore")],
+    checklist=[
+        ("Practice 10 to 20 minutes today, aimed at one small weak spot [1]", "Write down one thing you learned today"),
+        ("Weekly: three practice sessions done? Ask for feedback from someone better|Sunday", "Weekly: is the challenge slightly too hard? Adjust so it stretches you without frustrating you [2]|Sunday"),
+    ],
+    tasks=[
+        _pd_t("Prevention A", "Weekly practice sessions (three, about 20 minutes)", 7, 1.0, "Aim each session at one weak spot, slow it down, and get feedback if you can. Stop while you still want more. [Moderate]"),
+        _pd_t("Prevention A", "Monthly review with a thinking partner (optional)", 30, 0.5, "Once a month, sit down with a thinking partner (a friend, a mentor, a counsellor or an AI) and review the month. Bring your habit counts, your strengths chart and your goals, and use the Monthly review prompt on the Philosophy page (Talk it over). Ask: what patterns do you see, what should I keep, shrink or drop, and what am I not seeing? Ask it to push back and disagree. Do not paste Private journal text into any online service. Take the advice as input, not a verdict, and finish with one real action, ideally involving a real person. Optional: skip a month if you like. Finish with a reward from your six joys. [Emerging]"),
+        _pd_t("Prevention A", "Monthly skill review", 30, 0.5, "What improved? What is the next milestone? Is the challenge slightly beyond your skill (that is where learning and enjoyment meet) [2]? Adjust the plan. [Moderate]"),
+        _pd_t("Prevention A", "Monthly strengths balance check (Gardner's lens)", 30, 0.3, "Which kinds of smarts did you use this month: words, logic, space and pictures, music, hands and movement, people, self-knowledge, nature? Notice the ones you neglected and try one small thing to use them. Use the Strengths lens on the Philosophy page. A lens for noticing, not a test [4]. [Traditional]"),
+        _pd_t("Prevention B", "Quarterly: get feedback from someone better", 91, 1.0, "Show your work to a teacher, mentor or someone more skilled and ask what to fix first. [Moderate]"),
+        _pd_t("Prevention B", "Quarterly: check tools and safety gear", 91, 0.8, "Check tools, guards and personal protective equipment for your craft (for welding: helmet lens, gloves, ventilation, fire safety). Follow each manual [3]. [Strong]", "Me", "Use the right protective equipment; follow the tool manual", 0.0, "None", "Tools and protective gear"),
+        _pd_t("Prevention C", "Yearly: pick the skill for the year", 365, 1.0, "Choose one skill that fits who you want to become. Set a milestone you can show someone by year end. [Moderate]"),
+    ],
+)
+
 for _gname, _g in SAMPLE_GROUPS.items(): _register_group(_gname, _g)
 
 # Optional private groups: a file called private_groups.py next to app.py adds extra sample groups (the vendor's own copy only).
@@ -776,6 +1775,7 @@ try:
         if _gname not in SAMPLE_GROUPS: _register_group(_gname, _g)
 except ImportError:
     pass
+FULL_CATEGORIES_LIST.sort(key=str.lower)   # asset groups in A-Z order
 
 def get_category_attributes(category, unit_index, asset_id):
     items = SAMPLE_ATTRIBUTES.get(category, [("Operational Scale", "Industrial Standard", "Standard group metric"), ("Primary Operating Base", "Main Site", "Active operational deployment"), ("Commissioned Date", "2021-06-01", "Commissioning record"), ("Design Lifespan", "25 Years", "Full lifecycle maintenance protocol")])
@@ -817,6 +1817,16 @@ def get_default_checklist_df(category):
   def _split_day(lab):      # a seed item may carry a weekday after a bar: "Weekly no-load run|Monday"
       if lab is None: return "[ N/A ]", "Daily"
       text, _, day = str(lab).partition("|")
+      if day and normalize_day(day) is None:
+          # "HEADER|text" or "HEADER|Sunday: text": the bar is a heading separator, not a weekday, so keep the whole label
+          _m = re.match(r"\s*(mon|tues?|wed(?:nes)?|thur?s?|fri|sat(?:ur)?|sun)(?:day)?\s*:\s*(.*)$", day, re.I | re.S)
+          if _m and normalize_day(_m.group(1)):
+              _d, _rest = normalize_day(_m.group(1)), _m.group(2).strip()
+          else:
+              _d, _rest = "Daily", day.strip()
+          _head = text.strip()
+          text = _rest if _head.upper() == "MOTIVATION" else f"{_head}: {_rest}"
+          return text.strip(), _d
       return text.strip(), (normalize_day(day) or "Daily") if day else "Daily"
   default_rows = []
   for pair in seed_tasks:
@@ -847,6 +1857,51 @@ def set_setting(key, value):
     with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
         conn.execute('INSERT OR REPLACE INTO "App_Settings" ("Key", "Value") VALUES (?, ?)', (key, str(value)))
         conn.commit()
+
+# ---- The seven categories that organise the Asset Group list in the sidebar ----
+SECTORS = ["Longevity and Awareness", "Inventions", "Government and Municipal", "Factory, Fleet and Industry",
+           "Oil Patch and Heavy Equipment", "Fire, Life Safety and Buildings", "Power Production"]
+SECTOR_UNSORTED = "Unsorted"
+# First match wins, so the order matters. A group the rules do not recognise lands in "Unsorted" until you move it.
+_SECTOR_RULES = [
+    ("Inventions", [r"\bgem\b", r"green energy machine", r"hydro-?terran", r"\bhtd\b", r"light ?shield", r"\(ls\)", r"irony"]),
+    ("Longevity and Awareness", [r"longevity", r"awareness", r"\bhumans?\b", r"preparedness", r"^(habits|goals|relationships|skills)$"]),
+    ("Power Production", [r"\bpp\b", r"power", r"reactor", r"candu", r"coal", r"\bwind\b", r"microgrid", r"solar", r"generator", r"\bhydro\b", r"thermal"]),
+    ("Fire, Life Safety and Buildings", [r"fire", r"life safety", r"hvac", r"boiler", r"refrigerat", r"building", r"elevator"]),
+    ("Oil Patch and Heavy Equipment", [r"drill", r"\brigs?\b", r"fracking", r"\boil\b", r"mining", r"construction", r"agricultur", r"crane", r"hoist", r"pump", r"compressor"]),
+    ("Government and Municipal", [r"\btowns?\b", r"\brms?\b", r"public works", r"highway", r"\bports?\b", r"railroad", r"municipal", r"government", r"\bit\b", r"network"]),
+    ("Factory, Fleet and Industry", [r"factory", r"forklift", r"material", r"machine tool", r"manufactur", r"production", r"vehicle", r"fleet", r"aircraft", r"marine", r"amph"]),
+]
+
+def _sector_overrides():
+    """Groups you moved by hand: {group name: category}. Saved in the app settings. Never raises."""
+    import json
+    try: d = json.loads(get_setting("sector_map", "{}"))
+    except Exception: d = {}
+    return d if isinstance(d, dict) else {}
+
+MAX_CUSTOM_SECTORS = 10
+
+def custom_sectors():
+    """Categories you made yourself: a list of names saved in the app settings. Never raises."""
+    import json
+    try: d = json.loads(get_setting("custom_sectors", "[]"))
+    except Exception: d = []
+    return [str(x) for x in d if str(x).strip()] if isinstance(d, list) else []
+
+def all_sectors():
+    """The seven built-in categories followed by any you made yourself."""
+    return SECTORS + [c for c in custom_sectors() if c not in SECTORS]
+
+def sector_of(group, overrides=None):
+    """Which category a group belongs to: your own choice first, then the keyword rules, else Unsorted."""
+    import re
+    ov = _sector_overrides() if overrides is None else overrides
+    if ov.get(group) in all_sectors() or ov.get(group) == SECTOR_UNSORTED: return ov[group]
+    low = str(group).lower()
+    for sec, pats in _SECTOR_RULES:
+        if any(re.search(pt, low) for pt in pats): return sec
+    return SECTOR_UNSORTED
 
 def get_labor_rate():
     try: v = float(get_setting("labor_rate", DEFAULT_LABOR_RATE))
@@ -1500,10 +2555,12 @@ def build_warranty_pdf(df, scope_text, soon_days):
                            rows, [66, 60, 110, 80, 56, 38, 44, 90, 188], bold_rows=set(range(len(rows))),
                            footer="Negative Days Left or Meter Left means the warranty has already ended. A warranty ends at whichever limit comes first.")
 
-def dashboard_alert_counts():
-    """(tasks overdue or due today, parts needing reorder, warranties needing action) for the Switchboard banner. Never raises."""
+def dashboard_alert_counts(groups=None):
+    """(tasks overdue or due today, parts needing reorder, warranties needing action) for the Switchboard banner. Never raises.
+    groups: if given, only tasks in those asset groups are counted (the category being viewed)."""
     try:
         d = fetch_due_tasks(None, 7)
+        if groups is not None and not d.empty: d = d[d["Group"].isin(list(groups))]
         n_tasks = int(d["Status"].isin(["Overdue", "Due today"]).sum()) if not d.empty else 0
     except Exception:
         n_tasks = 0
@@ -1685,6 +2742,17 @@ def auto_backup_daily():
     except Exception:
         return None
 
+def log_change(action, table, key="", detail=""):
+    """Add a line to the audit trail (who, when, what). Best effort: never raises and never blocks the real work."""
+    try:
+        if get_setting("audit_features", "0") != "1": return
+        with sqlite3.connect(DB_PATH, timeout=20.0) as _c:
+            _c.execute('INSERT INTO "Audit_Log" ("WhenTS","UserName","Action","TableName","RecordKey","Detail") VALUES (?,?,?,?,?,?)',
+                       (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), current_user_name() or "(login off)", str(action), str(table), str(key), str(detail)[:500]))
+            _c.commit()
+    except Exception:
+        pass
+
 def commit_signoff(task_id, hours, initials):
     """Record a signed-off task: add a row to Completed_Work_Orders and reset the task's
     Date_Last_Done / Meter_At_Last so it stops showing as due. Returns (ok, message)."""
@@ -1715,6 +2783,7 @@ def commit_signoff(task_id, hours, initials):
             conn.commit()
     except sqlite3.Error as e:
         return False, f"Database error, nothing was saved: {e}"
+    log_change("Task signed off", "Completed_Work_Orders", f"{asset_id} / {task_name}", f"initials {initials}, {hours:g} hrs")
     return True, f"Signed off and archived: {asset_id} / {task_name} ({today}, {initials}, {hours:g} hrs)."
 
 def fetch_history(category, start_date, end_date, asset_ids=None):
@@ -3040,9 +4109,6 @@ SAMPLE_PARTS = {
     "Drilling Rigs": [("DRL-MP-LINER", "Mud pump liner", "Rack R1", "Rigsite Supply", 4, 2, 4, 420.00),
                       ("DRL-MP-VALVE", "Mud pump valve & seat set", "Rack R1", "Rigsite Supply", 3, 3, 6, 180.00),
                       ("DRL-WL-CLAMP", "Wire rope clip set", "Bin R4", "Rigsite Supply", 12, 6, 12, 9.50)],
-    "Service Rigs": [("SRV-SL-PACK", "Stripper rubber, 2-7/8 in.", "Rack S1", "Rigsite Supply", 5, 2, 4, 120.00),
-                     ("SRV-HYD-FLT", "Hydraulic return filter", "Rack S2", "Rigsite Supply", 4, 2, 4, 55.00),
-                     ("SRV-BRK-BAND", "Drawworks brake band lining", "Rack S3", "Rigsite Supply", 1, 1, 2, 390.00)],
     "Thermal Plant": [("THP-GSKT-SW", "Spiral wound gasket, 6 in.", "Rack P1", "Plant Industrial", 10, 4, 10, 17.00),
                       ("THP-VALVE-PK", "Valve packing set, graphite", "Rack P1", "Plant Industrial", 6, 3, 6, 21.50),
                       ("THP-SENS-RTD", "RTD temperature sensor", "Cabinet P3", "Plant Industrial", 2, 2, 4, 95.00)],
@@ -3052,24 +4118,24 @@ SAMPLE_PARTS = {
     "Pumps/Compressors": [("PMP-SEAL-MECH", "Mechanical seal, 1.5 in.", "Rack M1", "Flowline Industrial", 3, 2, 4, 130.00),
                           ("PMP-BRG-6309", "Bearing 6309-2RS", "Rack M1", "Flowline Industrial", 6, 4, 8, 19.00),
                           ("CMP-OF-AIR", "Compressor air/oil separator element", "Rack M2", "Flowline Industrial", 2, 2, 3, 175.00)],
-    "Forklifts": [("FRK-MAST-CHAIN", "Mast lift chain, per metre", "Rack F1", "Lift Truck Parts", 10, 4, 10, 34.00),
-                  ("FRK-PNEU-TIRE", "Solid cushion tire, 21x7x15", "Yard F2", "Lift Truck Parts", 2, 2, 4, 150.00),
-                  ("FRK-FORK-PIN", "Fork positioner pin set", "Bin F3", "Lift Truck Parts", 5, 2, 4, 28.00)],
     "Agriculture": [("AGR-KNIFE-SEC", "Sickle section, combine header", "Shed G1", "Farm Parts Direct", 40, 20, 40, 3.20),
                     ("AGR-CHAIN-RC", "Roller chain #60, 10 ft", "Shed G1", "Farm Parts Direct", 5, 3, 6, 38.00),
                     ("AGR-TINE-BALE", "Baler pickup tine", "Shed G2", "Farm Parts Direct", 30, 20, 40, 2.10)],
-    "Generators": [("GEN-FILT-KIT", "Generator service filter kit", "Shelf E1", "Standby Power Supply", 3, 2, 4, 78.00),
-                   ("GEN-COOLANT", "Extended-life coolant, 20 L", "Shelf E1", "Standby Power Supply", 2, 2, 4, 65.00),
-                   ("GEN-BATT-12V", "Starting battery 12 V, 800 CCA", "Rack E2", "Standby Power Supply", 2, 1, 2, 185.00)],
     "Cranes & Hoists": [("CRN-WIRE-ROPE", "Hoist wire rope, per metre", "Rack N1", "Lift & Rigging Co.", 60, 30, 60, 11.50),
                         ("CRN-HOOK-LATCH", "Hook safety latch", "Bin N2", "Lift & Rigging Co.", 6, 3, 6, 14.00),
                         ("CRN-LIM-SW", "Limit switch assembly", "Cabinet N3", "Lift & Rigging Co.", 1, 1, 2, 220.00)],
-    "Refrigeration": [("REF-FD-CORE", "Filter drier core", "Cabinet Q1", "Cold Chain Supply", 4, 2, 4, 36.00),
-                      ("REF-FAN-MTR", "Evaporator fan motor", "Rack Q2", "Cold Chain Supply", 2, 1, 2, 120.00),
-                      ("REF-DEFR-HTR", "Defrost heater element", "Rack Q2", "Cold Chain Supply", 0, 1, 2, 64.00)],
+    "Factory Measuring & Test Equipment": [("MTE-LBL-CAL", "Calibration due labels, roll of 500", "Drawer Q1", "Machinists Supply", 2, 1, 3, 12.00),
+                                           ("MTE-CASE-S", "Instrument storage case", "Shelf Q1", "Machinists Supply", 2, 1, 2, 25.00),
+                                           ("MTE-TAG-OOS", "Out-of-service tags (pack of 100)", "Drawer Q1", "Machinists Supply", 1, 1, 2, 18.00)],
     "Machine Tools": [("MCH-COOL-5G", "Cutting coolant concentrate, 20 L", "Shelf L1", "Machinists Supply", 3, 2, 4, 145.00),
                       ("MCH-WAY-OIL", "Way lube oil, 20 L", "Shelf L1", "Machinists Supply", 2, 2, 3, 110.00),
                       ("MCH-INS-CNMG", "Carbide insert CNMG 432 (box of 10)", "Cabinet L2", "Machinists Supply", 8, 4, 8, 72.00)],
+    "Longevity 60-74": [("LNG-MVI-90", "Multivitamin for adults 50+, 90 tablets", "Kitchen shelf", "Local pharmacy", 2, 1, 3, 22.00),
+                  ("LNG-D3-1000", "Vitamin D3 1,000 IU, 180 softgels", "Kitchen shelf", "Local pharmacy", 1, 1, 2, 14.00),
+                  ("LNG-OMG-3", "Fish oil, EPA + DHA, 120 softgels", "Kitchen shelf", "Local pharmacy", 1, 1, 2, 26.00),
+                  ("LNG-BPCUFF", "Home blood pressure monitor (validated, upper arm)", "Bedroom drawer", "Local pharmacy", 1, 1, 1, 65.00),
+                  ("LNG-BAND", "Resistance bands, light to heavy set", "Exercise corner", "Sporting goods", 1, 1, 1, 30.00),
+                  ("LNG-TEA", "Green tea, loose or bags", "Kitchen shelf", "Grocery", 2, 1, 3, 8.00)],
     "Fire & Life Safety": [("FLS-EXT-ABC10", "ABC extinguisher 10 lb, recharged", "Rack Z1", "Safety First Supply", 4, 2, 4, 78.00),
                            ("FLS-SMK-DET", "Smoke detector head", "Rack Z2", "Safety First Supply", 10, 4, 10, 23.00),
                            ("FLS-EMG-LAMP", "Emergency light battery pack", "Rack Z2", "Safety First Supply", 3, 2, 4, 34.00)],
@@ -3079,6 +4145,32 @@ SAMPLE_PARTS = {
                      ("IT-BKP-2TB", "External backup drive, 2 TB", "Shelf N2", "Office Tech Supply", 2, 1, 2, 89.00),
                      ("IT-SSD-500", "Solid-state drive, 500 GB", "Shelf N3", "Office Tech Supply", 2, 1, 2, 68.00)],
 }
+for _lg, _lp in (("Longevity 18-39 Adults", "L18"),
+                 ("Longevity 40-59 Adults", "L40"), ("Longevity 75 Plus", "L75")):
+    SAMPLE_PARTS[_lg] = [(_r[0].replace("LNG-", _lp + "-"),) + tuple(_r[1:]) for _r in SAMPLE_PARTS["Longevity 60-74"]]
+SAMPLE_PARTS["Longevity 00-05 Early Years"] = [("L00-VITD", "Vitamin D drops 400 IU (infants)", "Kitchen shelf", "Local pharmacy", 1, 1, 2, 16.00),
+                                      ("L00-TBRUSH", "Child toothbrush and fluoride toothpaste", "Bathroom", "Local pharmacy", 2, 1, 3, 7.00),
+                                      ("L00-HELMET", "Bike or tricycle helmet, correct size", "Entry closet", "Sporting goods", 1, 1, 1, 45.00),
+                                      ("L00-SUNSCR", "Sunscreen SPF 30+ for children", "Entry closet", "Local pharmacy", 1, 1, 2, 14.00)]
+SAMPLE_PARTS["Longevity 06-12 Kids"] = [("L06-TBRUSH", "Child toothbrush and fluoride toothpaste", "Bathroom", "Local pharmacy", 2, 1, 3, 7.00),
+                                      ("L06-HELMET", "Bike helmet, correct size", "Entry closet", "Sporting goods", 1, 1, 1, 45.00),
+                                      ("L06-SUNSCR", "Sunscreen SPF 30+ for children", "Entry closet", "Local pharmacy", 1, 1, 2, 14.00)]
+SAMPLE_PARTS["Longevity 13-17 Teens"] = [("L13-TBRUSH", "Toothbrush, floss and mouthguard", "Bathroom", "Local pharmacy", 2, 1, 3, 20.00),
+                                        ("L13-HELMET", "Helmet for bike, skate or snow sports", "Entry closet", "Sporting goods", 1, 1, 1, 60.00),
+                                        ("L13-SUNSCR", "Sunscreen SPF 30+", "Entry closet", "Local pharmacy", 1, 1, 2, 14.00)]
+
+SAMPLE_PARTS["Preparedness: Home & Family"] = [("PRP-WATER-4L", "Drinking water, 4 L jug", "Basement shelf", "Grocery store", 12, 6, 12, 4.00),
+                                               ("PRP-BATT-AA", "AA batteries, pack of 24", "Utility drawer", "Hardware store", 2, 1, 2, 14.00),
+                                               ("PRP-BATT-D", "D batteries, pack of 8", "Utility drawer", "Hardware store", 2, 1, 2, 16.00),
+                                               ("PRP-FIRSTAID", "First-aid kit, family size", "Kitchen cupboard", "Pharmacy", 1, 1, 2, 45.00),
+                                               ("PRP-LANTERN", "LED lantern", "Utility drawer", "Hardware store", 2, 1, 2, 22.00),
+                                               ("PRP-CANDLE", "Emergency candles, pack", "Utility drawer", "Hardware store", 2, 1, 2, 8.00),
+                                               ("PRP-RADIO", "Crank or battery weather radio", "Utility drawer", "Hardware store", 1, 1, 1, 40.00),
+                                               ("PRP-FOOD-RICE", "Rice, 10 kg bag", "Basement shelf", "Grocery store", 2, 1, 2, 18.00),
+                                               ("PRP-FOOD-BEANS", "Canned beans (case)", "Basement shelf", "Grocery store", 2, 1, 2, 24.00),
+                                               ("PRP-BLANKET", "Wool or emergency blanket", "Entry closet", "Sporting goods", 3, 2, 3, 25.00),
+                                               ("PRP-EXT-ABC", "ABC fire extinguisher, 5 lb", "Kitchen", "Safety supply", 1, 1, 2, 60.00),
+                                               ("PRP-CO-ALARM", "Carbon monoxide alarm", "Hallway", "Hardware store", 2, 1, 2, 40.00)]
 
 def _seed_sample_parts(cursor):
     """Sample parts for each sample group. Added only while the parts list is completely empty, so a part you delete or change is never put back."""
@@ -3641,7 +4733,14 @@ def demo_cap_gate(n_new=1, new_groups=0):
     """Stop the page with a plain message if the demo limits would be passed."""
     _m = demo_cap_message(n_new, new_groups)
     if _m:
-        st.error(_m)
+        # Show the message in the full-width slot at the top of the page (made below the DEMO banner), not inside a narrow column
+        _slot = globals().get("_DEMO_SLOT")
+        try:
+            if _slot is not None: _slot.error(_m)
+            else: st.error(_m)
+            st.toast("Demo limit reached. The message is at the top of the page.")
+        except Exception:
+            st.error(_m)
         st.stop()
 
 
@@ -3703,6 +4802,54 @@ def init_db():
         cursor.executemany('INSERT INTO "Glossary" ("Term", "Acronym", "Definition", "AssetGroup") VALUES (?, ?, ?, ?)', seed_glossary)
         conn.commit()
 
+    cursor.execute('SELECT COUNT(*) FROM "Glossary" WHERE Term = ?', ("Mean Time Between Failures",))
+    if cursor.fetchone()[0] == 0:
+        _gx = [
+            ("Mean Time Between Failures", "MTBF", "The average running time between failures of a repairable item. A higher number means fewer breakdowns, but it is an average, not a promise for any one machine.", "Universal / All"),
+            ("Mean Time To Repair", "MTTR", "The average time it takes to get a failed item working again, including finding the fault, getting parts and testing.", "Universal / All"),
+            ("Reliability", "", "The chance that an item does its job without failing for a stated time under stated conditions.", "Universal / All"),
+            ("Maintainability", "", "How easily and quickly an item can be kept working or put right. Good access, simple parts and clear manuals make a machine more maintainable.", "Universal / All"),
+            ("Availability", "", "The share of time an item is ready to work. It depends on both how often it fails and how fast it is repaired.", "Universal / All"),
+            ("Preventive Maintenance", "PM", "Work done on a schedule (by time or use) before a failure, such as oil changes, inspections and replacing worn parts.", "Universal / All"),
+            ("Condition-Based Maintenance", "CBM", "Maintenance done when a measurement shows it is needed, such as rising vibration, temperature or oil contamination, instead of on a fixed calendar.", "Universal / All"),
+            ("Corrective Maintenance", "", "Repair done after something has failed or is found faulty.", "Universal / All"),
+            ("Run to Failure", "", "A deliberate decision to fix something only when it breaks, sensible only when failure is cheap, safe and easy to fix.", "Universal / All"),
+            ("Reliability-Centred Maintenance", "RCM", "A way of choosing maintenance for each machine by asking what it must do, how it can fail and what the failure would cost, with safety first. It uses time-based tasks, condition-based tasks, failure-finding tasks, or a deliberate run to failure.", "Universal / All"),
+            ("Failure-Finding Task", "", "A test that checks a hidden protective function still works, such as an emergency stop, relief valve, low-water cut-off or backup pump, because its failure gives no warning until you need it.", "Universal / All"),
+            ("Bathtub Curve", "", "A picture of how failure rates often behave: high early on (infant failures), low and steady in the middle, and rising again as parts wear out.", "Universal / All"),
+            ("Failure Modes and Effects Analysis", "FMEA", "A step-by-step review of each part: how it could fail, what happens when it does, and what to do about the worst cases first.", "Universal / All"),
+            ("Fault Tree Analysis", "FTA", "A diagram that starts from an unwanted event and works backward to the combinations of causes that could produce it.", "Universal / All"),
+            ("Root Cause Analysis", "RCA", "Digging past the obvious trigger of a failure to the underlying reason, so the fix prevents a repeat.", "Universal / All"),
+            ("Lockout / Tagout", "LOTO", "Isolating energy sources and locking and tagging them off so equipment cannot start while someone is working on it.", "Universal / All"),
+            ("Job Hazard Analysis", "JHA", "Breaking a task into steps, spotting the hazards in each, and deciding the controls before the work starts.", "Universal / All"),
+            ("Hierarchy of Controls", "", "The order of preference for handling a hazard: remove it, replace it with something safer, guard or engineer it away, change how people work, and only then rely on protective equipment.", "Universal / All"),
+            ("Near Miss", "", "An event that could have caused injury or damage but did not. Recording near misses shows where the next accident would have happened.", "Universal / All"),
+            ("Working Load Limit", "WLL", "The most load a piece of lifting gear is rated to carry in normal use. Also called safe working load (SWL).", "Cranes & Hoists"),
+            ("Competent Person", "", "Someone with the training, experience and authority to spot hazards and defects and to order them corrected. Local regulations define who qualifies.", "Universal / All"),
+            ("Condition Monitoring", "", "Measuring a machine while it runs (vibration, temperature, oil analysis, current) to catch trouble early.", "Universal / All"),
+        ]
+        cursor.executemany('INSERT INTO "Glossary" ("Term", "Acronym", "Definition", "AssetGroup") VALUES (?, ?, ?, ?)', _gx)
+        conn.commit()
+
+    cursor.execute('SELECT COUNT(*) FROM "Glossary" WHERE Term = ?', ("Calibration",))
+    if cursor.fetchone()[0] == 0:
+        _gq = [
+            ("Calibration", "", "Comparing an instrument with a more accurate reference standard and recording how far off it is, adjusting it if needed. Done at set intervals so readings can be trusted.", "Universal / All"),
+            ("Traceability (measurement)", "", "An unbroken chain of comparisons linking an instrument's reading back to a recognised national or international standard, usually shown on a calibration certificate.", "Universal / All"),
+            ("Verification (of an instrument)", "", "A quick check that an instrument still reads correctly against a known reference between formal calibrations. It does not replace calibration.", "Universal / All"),
+            ("Out of Tolerance", "", "A reading that falls outside the allowed error for an instrument. Anything measured with it since its last good check may need reviewing.", "Universal / All"),
+            ("Nonconformity", "", "A requirement that was not met: a part, job or record that does not match what was specified.", "Universal / All"),
+            ("Corrective Action", "", "Action taken to remove the cause of a problem so it does not happen again, after finding the root cause. Not the same as a quick repair.", "Universal / All"),
+            ("Preventive Action", "", "Action taken to remove the cause of a possible problem before it happens, such as adding a task to the schedule after a near miss.", "Universal / All"),
+            ("Failure Mode", "", "How a failure shows itself, such as fails to start, external leak, vibration or overheating. Not the same as the cause.", "Universal / All"),
+            ("Failure Mechanism", "", "The physical or chemical process behind a failure, such as wear, fatigue, corrosion or erosion.", "Universal / All"),
+            ("Criticality", "", "A ranking of how much trouble it would cause if an asset failed (safety, production, cost, environment). Used to decide which assets get the most attention.", "Universal / All"),
+            ("Management Review", "", "A regular meeting where the people in charge look at results, problems and resources and decide what to change. Minutes are kept.", "Universal / All"),
+            ("Audit Trail", "", "A record of who changed what and when, so changes to records can be traced.", "Universal / All"),
+        ]
+        cursor.executemany('INSERT INTO "Glossary" ("Term", "Acronym", "Definition", "AssetGroup") VALUES (?, ?, ?, ?)', _gq)
+        conn.commit()
+
     cursor.execute('CREATE TABLE IF NOT EXISTS "IncidentReports" ("IncidentID" INTEGER PRIMARY KEY AUTOINCREMENT, "Date" TEXT, "Location" TEXT, "AssetInvolved" TEXT, "Fatalities" INTEGER, "Agency" TEXT, "Description" TEXT, "Status" TEXT)')
     for _col, _typ in (("Injuries", "INTEGER DEFAULT 0"), ("LostTime", "TEXT DEFAULT 'No'"), ("ReportNo", "TEXT"), ("IncidentType", "TEXT"), ("Country", "TEXT"), ("Region", "TEXT")):
         try: cursor.execute(f'ALTER TABLE "IncidentReports" ADD COLUMN "{_col}" {_typ}')
@@ -3726,6 +4873,10 @@ def init_db():
     cursor.execute('CREATE TABLE IF NOT EXISTS "Suppliers" ("SupplierID" INTEGER PRIMARY KEY AUTOINCREMENT, "SupplierName" TEXT, "Category" TEXT, "LeadTimeDays" INTEGER, "Phone" TEXT)')
     cursor.execute('CREATE TABLE IF NOT EXISTS "Employees" ("EmpID" INTEGER PRIMARY KEY AUTOINCREMENT, "EmpName" TEXT, "Role" TEXT, "Specialty" TEXT)')
     cursor.execute('CREATE TABLE IF NOT EXISTS "Completed_Work_Orders" ("HistoryID" INTEGER PRIMARY KEY AUTOINCREMENT, "AssetID" TEXT, "TaskName" TEXT, "DateCompleted" TEXT, "TechnicianName" TEXT, "LaborHours" REAL, "PartsUsed" TEXT, "TotalCost" REAL, "Notes" TEXT)')
+    for _col, _typ in (("FailureMode", "TEXT"), ("FailureCause", "TEXT"), ("FailureMechanism", "TEXT"), ("DowntimeHours", "REAL"), ("MeterReading", "TEXT")):
+        try: cursor.execute(f'ALTER TABLE "Completed_Work_Orders" ADD COLUMN "{_col}" {_typ}')
+        except sqlite3.OperationalError: pass   # already there
+    cursor.execute('CREATE TABLE IF NOT EXISTS "Audit_Log" ("LogID" INTEGER PRIMARY KEY AUTOINCREMENT, "WhenTS" TEXT, "UserName" TEXT, "Action" TEXT, "TableName" TEXT, "RecordKey" TEXT, "Detail" TEXT)')
     cursor.execute('CREATE TABLE IF NOT EXISTS "WorkOrders" ("WorkOrderID" INTEGER PRIMARY KEY AUTOINCREMENT, "AssetID" TEXT, "ServiceDate" TEXT, "MyCompany" TEXT, "Description" TEXT, "TotalCost" REAL)')
     cursor.execute('CREATE TABLE IF NOT EXISTS "Asset_Attributes" ("AttrID" INTEGER PRIMARY KEY AUTOINCREMENT, "AssetID" TEXT, "AttributeName" TEXT, "Value" TEXT, "Notes" TEXT)')
     cursor.execute('CREATE TABLE IF NOT EXISTS "Asset_Parts" ("PartID" INTEGER PRIMARY KEY AUTOINCREMENT, "AssetID" TEXT, "PartHeading" TEXT, "PartDescription" TEXT, "Supplier" TEXT, "PowerUsage" TEXT, "Inventory" TEXT, "Status" TEXT)')
@@ -3789,6 +4940,7 @@ elif DEMO.get("expired"):
 elif LICENSE_READ_ONLY:
     st.warning(f"{LICENSE_INFO['message']} The app is now **read-only**: your data is safe and you can still view, print and back up, "
                "but changes are not saved. Enter a renewed licence code under **Users & Security**.")
+_DEMO_SLOT = st.empty()   # full-width place for the demo limit message (see demo_cap_gate)
 
 # --- SIDEBAR ROUTING & LOGIC ---
 if "view_mode_override" not in st.session_state: 
@@ -3797,19 +4949,22 @@ if "view_mode_override" not in st.session_state:
 visible_options = ["Switchboard", "Overdue Dashboard", "Checklists", "Sched. Maint.", "WorkOrders (W/O)", "Completed (W/O)", "Warranty Tracking", "Reports/Queries", "Asset Groups", "Parts Inventory", "Suppliers", "Service Co.", "Incident Reports", "Glossary", "Import Data"]
 if st.session_state.get("auth_role") == "admin":
     visible_options.extend(["Users & Security", "Settings"])
-current_idx = visible_options.index(st.session_state.view_mode_override) if st.session_state.view_mode_override in visible_options else 0
+current_idx = visible_options.index(st.session_state.view_mode_override) if st.session_state.view_mode_override in visible_options else None
 if st.session_state.view_mode_override in visible_options and st.session_state.get("main_nav_radio") != st.session_state.view_mode_override:
     st.session_state.main_nav_radio = st.session_state.view_mode_override   # keep the side menu in step with the green buttons
+elif st.session_state.view_mode_override not in visible_options:
+    # a page reached by a green button but not listed in the side menu (Philosophy, A Pound of Cure, Audit Readiness...):
+    # show no selection, so clicking "Switchboard" (or any item) in the side menu always counts as a change
+    st.session_state.main_nav_radio = None
 
 # 1. Control Function (Moved to Top)
 def nav_callback():
-    st.session_state.view_mode_override = st.session_state.main_nav_radio
+    if st.session_state.main_nav_radio: st.session_state.view_mode_override = st.session_state.main_nav_radio
 
 selected_view = st.sidebar.radio(
     "Control Function", 
     visible_options, 
-    index=current_idx,
-    key="main_nav_radio",
+    key="main_nav_radio",      # its value is set through session state above, so no index= here (it caused a console warning)
     on_change=nav_callback
 )
 
@@ -3867,15 +5022,140 @@ st.sidebar.markdown("---")
 with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
     cursor = conn.cursor()
     cursor.execute('SELECT DISTINCT Category FROM "Trucks" WHERE Category IS NOT NULL AND Category != ""')
-    db_cats = [row[0] for row in cursor.fetchall() if row[0]]
+    db_cats = sorted([row[0] for row in cursor.fetchall() if row[0]], key=str.lower)
 
 active_categories = db_cats if db_cats else FULL_CATEGORIES_LIST
 
 if "active_asset_group" not in st.session_state or st.session_state.active_asset_group not in active_categories:
-    st.session_state.active_asset_group = active_categories[0]
+    # On start-up, open on Longevity and Awareness (it applies to everybody); otherwise the first group in the list
+    _ov0 = _sector_overrides()
+    _lon0 = [_g for _g in active_categories if sector_of(_g, _ov0) == "Longevity and Awareness"]
+    st.session_state.active_asset_group = ("Humans" if "Humans" in _lon0 else _lon0[0]) if _lon0 else active_categories[0]
 
-selected_category = st.sidebar.radio("Asset Group", active_categories, index=active_categories.index(st.session_state.active_asset_group) if st.session_state.active_asset_group in active_categories else 0, key="asset_group_radio")
+def _short_group(_g):
+    """Shorter sidebar labels only (the real group names in the database are unchanged)."""
+    if _g.startswith("Preparedness"): return "Preparedness"
+    if _g.startswith("Longevity "): return _g[len("Longevity "):]
+    return _g
+def _short_sector(_s):
+    return "Longevity/Awareness" if _s == "Longevity and Awareness" else _s
+
+_ov = _sector_overrides()
+_sec_of = {_g: sector_of(_g, _ov) for _g in active_categories}
+_sec_opts = all_sectors() + ([SECTOR_UNSORTED] if SECTOR_UNSORTED in _sec_of.values() else [])
+if st.session_state.get("active_sector") not in _sec_opts:
+    st.session_state.active_sector = _sec_of.get(st.session_state.active_asset_group, _sec_opts[0])
+    st.session_state["sector_select"] = st.session_state.active_sector
+_w = st.session_state.get("sector_select")
+if _w is None or _w == st.session_state.active_sector:
+    # No category change by the user this run. If the active group was changed by the program (new, renamed or opened group), follow it.
+    _gs = _sec_of.get(st.session_state.active_asset_group)
+    if _gs in _sec_opts and _gs != st.session_state.active_sector:
+        st.session_state.active_sector = _gs
+        st.session_state["sector_select"] = _gs
+if st.session_state.get("sector_select") not in _sec_opts: st.session_state["sector_select"] = st.session_state.active_sector
+selected_sector = st.sidebar.selectbox("Category", _sec_opts, key="sector_select", format_func=_short_sector)
+if selected_sector != st.session_state.active_sector:
+    st.session_state.active_sector = selected_sector
+    _first = [_g for _g in active_categories if _sec_of.get(_g) == selected_sector]
+    if _first: st.session_state.active_asset_group = _first[0]
+_groups_here = [_g for _g in active_categories if _sec_of.get(_g) == selected_sector]
+if _groups_here:
+    selected_category = st.sidebar.radio("Asset Group", _groups_here, format_func=_short_group,
+        index=_groups_here.index(st.session_state.active_asset_group) if st.session_state.active_asset_group in _groups_here else 0,
+        key="asset_group_radio_" + selected_sector)
+else:
+    st.sidebar.caption("No groups in this category yet.")
+    selected_category = st.session_state.active_asset_group
 st.session_state.active_asset_group = selected_category
+with st.sidebar.expander("Move this group to another category"):
+    _dest_opts = all_sectors() + [SECTOR_UNSORTED]
+    if st.session_state.get("move_sector_to") not in _dest_opts:
+        st.session_state.pop("move_sector_to", None)   # first time, or that category was removed
+    _dest = st.selectbox("Move to", _dest_opts, key="move_sector_to")   # one shared key, so it remembers your last choice
+    def _after_move(_grp, _to):
+        """After a move: stay in the category you were working in while it still has groups (on the next one); when it is empty, follow the group."""
+        _old = st.session_state.get("active_sector")
+        _left = [g for g in active_categories if _sec_of.get(g) == _old and g != _grp]
+        if _left and _old != _to:
+            st.session_state.active_sector = _old
+            st.session_state["sector_select"] = _old
+            st.session_state.active_asset_group = _left[0]
+            st.toast(f"Moved '{_grp}' to {_to}. {len(_left)} left in {_short_sector(_old)}.")
+        else:
+            st.session_state.active_sector = _to
+            st.session_state["sector_select"] = _to
+            st.toast(f"Moved '{_grp}' to {_to}.")
+    def _do_move_group(_grp, _to):
+        import json as _json
+        try:
+            _ov2 = _sector_overrides(); _ov2[_grp] = _to
+            set_setting("sector_map", _json.dumps(_ov2))
+            _after_move(_grp, _to)
+            st.session_state.pop("move_err", None)
+        except Exception as _e:
+            st.session_state["move_err"] = f"Could not save: {_e}"
+    st.button("Move", key="btn_move_sector", on_click=_do_move_group, args=(selected_category, _dest))
+    st.markdown("**Make New Category?**")
+    _newcat = st.text_input("New Categ. <22", key="new_sector_name", max_chars=22)
+    def _do_new_category(_grp):
+        import json as _json
+        _nm = st.session_state.get("new_sector_name", "").strip()
+        _have = [c.lower() for c in all_sectors()] + [SECTOR_UNSORTED.lower()]
+        if not _nm:
+            st.session_state["move_err"] = "Type a name for the new category first."
+        elif _nm.lower() in _have:
+            st.session_state["move_err"] = f"A category called '{_nm}' already exists. Pick it in the Move to list instead."
+        elif len(custom_sectors()) >= MAX_CUSTOM_SECTORS:
+            st.session_state["move_err"] = f"You can make up to {MAX_CUSTOM_SECTORS} categories of your own."
+        else:
+            try:
+                set_setting("custom_sectors", _json.dumps(custom_sectors() + [_nm]))
+                _ov3 = _sector_overrides(); _ov3[_grp] = _nm
+                set_setting("sector_map", _json.dumps(_ov3))
+                _after_move(_grp, _nm)
+                st.session_state["move_sector_to"] = _nm
+                st.session_state["new_sector_name"] = ""
+                st.session_state.pop("move_err", None)
+            except Exception as _e:
+                st.session_state["move_err"] = f"Could not save: {_e}"
+    st.button("Create category and move group", key="btn_new_sector", on_click=_do_new_category, args=(selected_category,))
+    if selected_sector in custom_sectors():
+        st.caption(f"Your category '{selected_sector}' can be renamed or removed. The seven built-in categories cannot.")
+        _ren = st.text_input("Rename to <22", value=selected_sector, key="ren_sector_" + selected_sector, max_chars=22)
+        def _do_rename_category(_old, _new):
+            import json as _json
+            _new = (_new or "").strip()
+            _others = [c.lower() for c in all_sectors() if c != _old] + [SECTOR_UNSORTED.lower()]
+            if not _new:
+                st.session_state["move_err"] = "Type a name first."
+            elif _new.lower() in _others:
+                st.session_state["move_err"] = f"A category called '{_new}' already exists."
+            elif _new != _old:
+                try:
+                    set_setting("custom_sectors", _json.dumps([(_new if c == _old else c) for c in custom_sectors()]))
+                    _ov4 = {g: (_new if s == _old else s) for g, s in _sector_overrides().items()}
+                    set_setting("sector_map", _json.dumps(_ov4))
+                    st.session_state.active_sector = _new
+                    st.session_state["sector_select"] = _new
+                    st.session_state.pop("move_err", None)
+                except Exception as _e:
+                    st.session_state["move_err"] = f"Could not save: {_e}"
+        def _do_remove_category(_old):
+            import json as _json
+            try:
+                set_setting("custom_sectors", _json.dumps([c for c in custom_sectors() if c != _old]))
+                _ov5 = {g: s for g, s in _sector_overrides().items() if s != _old}
+                set_setting("sector_map", _json.dumps(_ov5))
+                st.session_state.pop("active_sector", None)
+                st.session_state.pop("sector_select", None)
+                st.session_state.pop("move_err", None)
+            except Exception as _e:
+                st.session_state["move_err"] = f"Could not save: {_e}"
+        st.button("Rename category", key="btn_ren_sector", on_click=_do_rename_category, args=(selected_sector, _ren))
+        st.button("Remove category", key="btn_rem_sector", on_click=_do_remove_category, args=(selected_sector,))
+        st.caption("Removing a category does not delete any groups. They go back to the category the app would choose, or Unsorted.")
+    if st.session_state.get("move_err"): st.error(st.session_state["move_err"])
 
 # One standard button width on every screen except the Switchboard (which was sized separately). 230px fits the usual labels on one line; a longer
 # label wraps to a second line. The cap never widens a button beyond its own column, and the small arrow buttons (primary) are left as they are.
@@ -4016,13 +5296,66 @@ ARCH_HTML = r'''<!DOCTYPE html>
 </div></body></html>
 '''
 
+_CLAIMS_CHECKED = [
+    ('Drinking about 1.5 to 3.5 cups of coffee a day goes with up to 30% lower risk of dying from any cause (Annals of Internal Medicine, 2022).', 'Emerging', 'Mostly accurate', 'Real study: over 170,000 UK adults, about 7 years of follow-up, observational, so it cannot show coffee causes the lower risk. Decaf did about the same as caffeinated. Benefit tapered above about 4.5 cups. The sugar in the coffee studied was low (about one teaspoon).', 'Web'),
+    ('A review of more than 1,000 studies found the chemicals made in roasting coffee were not a significant cancer risk.', 'Moderate', 'Accurate', "Matches the 2016 IARC reassessment, which moved coffee off the 'possibly carcinogenic' list. Very hot drinks are a separate issue.", 'General knowledge'),
+    ('People on GLP-1 weight-loss drugs should eat up to about 0.68 g of protein per pound of body weight (a 2024 study in Obesity).', 'Emerging', 'Unverified', 'I could not find a 2024 Obesity paper with that figure. A 2025 joint advisory from several obesity and nutrition societies calls for adequate protein plus strength training but gives no number on the page I read, and describes itself as consensus-based. The figure is well above ordinary adult advice, so it is not for people with kidney disease or without a dietitian.', 'Web'),
+    ('Patients who walked more than 7,500 steps a day before surgery cut their risk of complications by half (attributed to the Journal of the American College of Surgeons).', 'Emerging', 'Partly misattributed', 'A 2023 American College of Surgeons congress study reported 51% lower complication risk with more than 7,500 steps a day before surgery, a presentation of observational data. The Journal of the American College of Surgeons paper that press coverage links to looked at steps after surgery (18% lower odds of complications per extra 1,000 steps, 1,965 patients). Both are associations.', 'Web'),
+    ('Women who vacation at least twice a year are about eight times less likely to have a heart attack than women who go once every six years.', 'Emerging', 'Overstated', "The old finding is from the Framingham women: those who took a vacation once every six years or less were almost eight times MORE likely to develop heart disease than those who vacationed twice a year. That is a relative risk from an observational study, and it is likely confounded by income, health and stress. The magazine's 'eight times less likely' is the same finding turned around. Vacations are good for you, but this number is not a promise.", 'Web'),
+    ('Cold-water immersion benefits add up, with as few as 11 total minutes in a cold bath a week.', 'Emerging', 'Unverified', 'The best-known source is a small 2021 study of eight experienced winter swimmers against eight controls, all men, which shows differences but not cause. I could not confirm the 11-minute figure in the source I read. The magazine itself warns about cold shock and heart strain, which is right: skip it with heart disease, high blood pressure or on your own.', 'Web'),
+    ('The MIND diet (greens, berries, beans, poultry, nuts, fish) was designed to keep your brain sharp, with blueberries, beans and poultry singled out.', 'Emerging', 'Overstated', "Observational studies linked the MIND diet to slower decline, but the first large randomised trial (New England Journal of Medicine, 2023, three years) found no better cognitive result than a comparison diet; both groups improved a little and both ate somewhat fewer calories. Fruits, vegetables, beans and fish are still sensible, but 'proven brain diet' is too strong.", 'Web'),
+    ('Isometric exercise (holding a position) may lower blood pressure more than aerobic exercise.', 'Moderate', 'Accurate', 'A 2023 network meta-analysis in the British Journal of Sports Medicine (270 randomised trials, about 15,800 people) ranked isometric training best for systolic pressure. Check with a doctor first if your pressure is high; do not hold your breath.', 'Web'),
+    ('People diagnosed with dementia had up to 10 times as much microplastic in their brains (Nature Medicine).', 'Emerging', 'Uncertain', 'The February 2025 paper measured about 4.9 mg of micro and nanoplastics per gram in 24 brains. After publication, outside experts questioned the method (possible false positives from brain fat, possibly overestimated mass), and duplicated supplementary images were flagged (the lead author called it clerical). I did not confirm the dementia comparison in the source I read. Treat it as an early signal.', 'Web'),
+    ('Microwaving some plastic containers can release more than 2 billion nanoplastic particles per square centimetre (Environmental Science and Technology, 2023).', 'Emerging', 'Accurate', 'Lab study at the University of Nebraska on polypropylene baby-food containers and a polyethylene pouch, three minutes at full power with water or a weak acid. Health effects are unclear; the cell-culture result was in kidney cells, not people. A precaution (glass or ceramic for heating) is cheap.', 'Web'),
+    ('About 17 million US adults who were advised to take a statin no longer need one (JAMA Internal Medicine, June 2024).', 'Moderate', 'Mostly accurate', "The study modelled eligibility with the newer PREVENT risk calculator: eligible adults fell from about 45.4 million to 28.3 million, a drop of about 17.3 million. It is cross-sectional and a calculator change, not proof that stopping statins is safe. I did not confirm the '4 million currently on statins' figure. Never stop a statin without your doctor.", 'Web'),
+    ('A review of 63 studies from 22 countries (1994 to 2022) found no rise in brain cancer from cell phone use (WHO-commissioned).', 'Moderate', 'Accurate', "Karipidis and colleagues' systematic review for the WHO included 63 observational studies and found no association with head cancers. Observational and long-term effects are still being watched; the article's cautious tone is fair.", 'Web'),
+    ('Zinc (found in oatmeal) may shorten a cold, and selenium in Brazil nuts is a powerful antioxidant.', 'Moderate (for zinc lozenges), Traditional (for food zinc)', 'Misleading', "The evidence for shorter colds is for zinc lozenges or syrup started within a day or so of symptoms, with mixed results and side effects such as nausea. Food zinc has not been shown to shorten colds. The app's Home remedies box says the same.", 'General knowledge'),
+    ('Local honey has not been proven to relieve pollen allergies.', 'Dropped (for allergies)', 'Accurate', 'Trials have not shown a benefit for allergy symptoms. Honey for cough in older children and adults has better support (see Home remedies box).', 'General knowledge'),
+    ('No reputable study has found a link between vaccines and autism.', 'Strong', 'Accurate', 'Large studies across many countries agree.', 'General knowledge'),
+    ('Bright light for 30 minutes each morning can help seasonal affective disorder.', 'Moderate', 'Accurate', 'Standard first-line option for seasonal depression, usually a 10,000 lux lamp. Check with a doctor if you have bipolar disorder or eye disease.', 'General knowledge'),
+    ('Doctors no longer recommend breast self-exams because studies showed they did not reduce deaths.', 'Moderate', 'Accurate', 'Matches current screening guidance. Knowing what is normal for you and reporting changes is still advised.', 'General knowledge'),
+    ('Decades of research have proven the health benefits of seed oils.', 'Moderate', 'Mostly accurate', "Replacing saturated fat with unsaturated oils lowers heart risk in trials. 'Proven' overstates how fine the evidence is for specific oils, and what you eat them with matters.", 'General knowledge'),
+    ('Intermittent fasting works about the same as ordinary calorie cutting for weight loss, and may be easier for some people.', 'Strong', 'Accurate', 'Trials show similar weight loss; longevity benefits are not shown in people.', 'General knowledge'),
+    ('Ten minutes of brisk walking can lower anxiety; mindful walking and novelty may help anxiety and mood.', 'Emerging', 'Mostly accurate', 'Exercise in general reduces anxiety in trials; the ten-minute and novelty details come from small studies.', 'General knowledge'),
+    ('Saying hello to up to six people in your neighbourhood increases well-being.', 'Emerging', 'Mostly accurate', "Fits the research on 'weak ties' (brief contact with acquaintances and strangers is linked to better mood). Small studies, association. Added to the app as a weekly checklist item.", 'General knowledge'),
+    ('Doing a weekly act of kindness and gratitude strengthens connection (a study of more than 4,000 people in three countries; a 2024 meta-analysis).', 'Emerging', 'Not checked', 'Plausible and consistent with the wider research, but I did not read the studies. The app already has a weekly appreciation habit.', 'Not checked'),
+    ('A weighted silk eye pillow or blanket (deep-pressure therapy) may help you fall asleep.', 'Emerging', 'Not checked', 'Weighted blankets have mixed, small trials, mostly in specific groups. I could not open the review I searched for.', 'Not checked'),
+    ('Fidget rings and fidgeting may ease anxiety and boost focus.', 'Emerging', 'Not checked', 'Research on fidgeting is mixed (some help for attention, some distraction). Not checked in detail.', 'Not checked'),
+    ('Red-light therapy research is limited and large randomised studies are needed.', 'Emerging', 'Accurate', 'The magazine itself is appropriately cautious.', 'General knowledge'),
+    ('GLP-1 drugs may also reduce risk of heart attack, stroke and more, but over a third quit within a year (JAMA Network Open).', 'Moderate (heart outcomes in people with obesity and heart disease), Emerging (others)', 'Not checked', 'The heart benefit has a large randomised trial behind it for semaglutide; the other benefits are early. The dropout figure was not checked.', 'Not checked'),
+    ('Organic tampons are not safer: a study found 12 metals, including lead and arsenic, in popular tampons.', 'Emerging', 'Not checked', 'A real 2024 study; the health meaning of the amounts is unknown. Not checked in detail.', 'Not checked'),
+    ('Bacteria move onto dropped food in less than a second (so the five-second rule is a myth).', 'Moderate', 'Accurate', 'Matches the Rutgers research.', 'General knowledge'),
+    ('Studies show vocabulary, verbal reasoning and math stay the same or improve as we age.', 'Moderate', 'Overstated', 'The Seattle Longitudinal Study (Schaie) found vocabulary and verbal ability hold up or rise into the 60s and beyond, but reasoning, spatial skills and speed decline from midlife. Math is not a safe fit on that list.', 'General knowledge'),
+    ('A Princeton study found people do tasks better in organised spaces than chaotic ones.', 'Emerging', 'Mostly accurate', 'A real 2011 imaging study, small, showing clutter competes for attention. It says nothing about long-term brain health.', 'General knowledge'),
+    ('Eating one to two servings of leafy greens a day goes with a slower mental decline (Neurology).', 'Emerging', 'Mostly accurate', 'Observational (Rush Memory and Aging Project, 2018), so it cannot prove greens are the cause. Eating more vegetables is sensible anyway.', 'General knowledge'),
+    ('Listening to classical music boosts the brain at any age (University of Helsinki, Scientific Reports).', 'Emerging', 'Overstated', "A small gene-expression study of listeners, not a test of memory or thinking. Music is pleasant and may help mood; 'boosts the brain' goes further than the data.", 'General knowledge'),
+    ('Brain training and puzzles can lower dementia risk (ACTIVE trial).', 'Moderate', 'Overstated', 'The 20-year follow-up found a benefit only for speed-of-processing training with booster sessions: about 25% lower risk of a dementia diagnosis. Memory and reasoning training showed none. The trainer was commercially linked. It does not show crosswords or general puzzles help.', 'Web'),
+    ('A structured lifestyle programme (exercise, diet, social and mental activity, health checks) protects thinking skills (US POINTER).', 'Moderate', 'Mostly accurate', 'The two-year US POINTER trial found a modest cognitive gain, larger with the structured, coached programme than the self-guided one. Modest, short, and it does not show dementia is prevented.', 'Web'),
+    ('Colouring mandala-like designs reduces stress.', 'Emerging', 'Overstated', 'Small studies show lower anxiety after colouring, but it is similar to other simple calming activities. Pleasant, cheap, harmless; not a special treatment.', 'General knowledge'),
+    ('Overwhelming research shows the Mediterranean diet helps the heart, weight and cancer prevention.', 'Moderate', 'Overstated', 'Heart benefit is the strong part (PREDIMED: about 30% fewer heart events; the trial was retracted and republished in 2018 after randomisation problems, with similar results). Weight and cancer evidence is weaker and mostly observational.', 'Web'),
+    ('Swapping saturated fats such as butter for olive oil goes with lower heart disease deaths (JACC).', 'Moderate', 'Mostly accurate', 'A large 2022 cohort found about 19% lower cardiovascular mortality with more olive oil. Observational, but it fits trials on replacing saturated fat.', 'General knowledge'),
+    ('A review in Oncotarget found people in Mediterranean countries have lower cancer rates, credited to the diet.', 'Emerging', 'Overstated', 'Comparing countries cannot separate diet from smoking, income, screening and genes. Diet may help, but this design cannot show it.', 'General knowledge'),
+    ('Whole grains and their B vitamins protect memory.', 'Emerging', 'Overstated', 'Observational links only. B-vitamin trials have mostly failed to protect thinking in people who are not deficient.', 'General knowledge'),
+    ('Beta-carotene from squash reduces the risk of macular degeneration.', 'Emerging', 'Overstated', 'The proven eye result is for the AREDS supplement mix, not food beta-carotene (and beta-carotene supplements raise lung cancer risk in smokers). Orange vegetables are healthy; the eye claim is a stretch.', 'General knowledge'),
+]
+
 # --- MAIN SCREEN RENDERING ---
+if view_mode != "Monty Python":
+    st.session_state.pop("hb_open", None); st.session_state.pop("hb_scroll", None)
+if view_mode != "Monty Python": st.session_state.pop("pj_key", None)   # the private journal locks itself when you leave its page
+# "Back to A Pound of Cure": offered only on the three pages you can reach from it, and forgotten as soon as you go anywhere else
+if view_mode not in ("WorkOrders (W/O)", "Incident Reports", "Parts Inventory"): st.session_state.pop("from_pound", None)
+elif st.session_state.get("from_pound"):
+    _bp1, _bp2 = st.columns([1.3, 4])
+    with _bp1:
+        if st.button("← Back to A Pound of Cure", key="btn_back_pound", use_container_width=True):
+            st.session_state.pop("from_pound", None); st.session_state.view_mode_override = "Pound of Cure"; st.rerun()
 if view_mode == "Switchboard":
   if os.path.exists("BlackMarble_2016_3km.jpg"): st.image("BlackMarble_2016_3km.jpg", use_container_width=True)
   st.markdown("<h2 style='text-align: center; margin-bottom: 25px;'>An Ounce of Prevention — Switchboard</h2>", unsafe_allow_html=True)
-  _al_tasks, _al_parts, _al_warr = dashboard_alert_counts()
+  _al_tasks, _al_parts, _al_warr = dashboard_alert_counts([_g for _g in active_categories if _sec_of.get(_g) == selected_sector])
   if _al_tasks or _al_parts or _al_warr:
-    _hl = ([f"<b>{_al_tasks}</b> task(s) overdue or due today."] if _al_tasks else []) + (["Parts need to be reordered."] if _al_parts else []) \
+    _hl = ([f"<b>{_al_tasks}</b> task(s) overdue or due today in {selected_sector}."] if _al_tasks else []) + (["Parts need to be reordered."] if _al_parts else []) \
           + ([f"<b>{_al_warr}</b> warranty(ies) expiring."] if _al_warr else [])
     _open = "Open " + (" or ".join((["Parts"] if _al_parts else []) + ["Overdue Dashboard"])) + "."
     st.markdown("<div style='text-align:center; border:2px solid #c0392b; color:#c0392b; border-radius:6px; padding:8px 10px; margin-bottom:18px; font-weight:bold; font-size:13pt;'>⚠ "
@@ -4031,6 +5364,9 @@ if view_mode == "Switchboard":
   
   with col_sw1:
     st.markdown("<div style='text-align: center; font-size: 13.5pt; font-weight: bold; margin-bottom: 12px;'>Daily Operations</div>", unsafe_allow_html=True)
+    if selected_sector == "Longevity and Awareness":
+        if st.button("🌱 Habit Builder", key="sw_habit", use_container_width=True):
+            st.session_state.view_mode_override = "Monty Python"; st.session_state["hb_open"] = True; st.session_state["hb_scroll"] = True; st.rerun()
     if st.button("Overdue Dashboard", use_container_width=True): st.session_state.view_mode_override = "Overdue Dashboard"; st.rerun()
     if st.button("Checklists", use_container_width=True): st.session_state.view_mode_override = "Checklists"; st.rerun()
     if st.button("Sched. Maint.", use_container_width=True): st.session_state.view_mode_override = "Sched. Maint."; st.rerun()
@@ -4044,15 +5380,16 @@ if view_mode == "Switchboard":
     if st.button("Parts Inventory", use_container_width=True): st.session_state.view_mode_override = "Parts Inventory"; st.rerun()
     if st.button("Suppliers", use_container_width=True): st.session_state.view_mode_override = "Suppliers"; st.rerun()
     if st.button("Service Co.", use_container_width=True): st.session_state.view_mode_override = "Service Co."; st.rerun()
+    if st.button("Warranty Tracking", use_container_width=True): st.session_state.view_mode_override = "Warranty Tracking"; st.rerun()
     if st.button("Glossary", use_container_width=True): st.session_state.view_mode_override = "Glossary"; st.rerun()
     if st.button("How Ounce Fits In", use_container_width=True): st.session_state.view_mode_override = "System Architecture"; st.rerun()
     
   with col_sw3:
     st.markdown("<div style='text-align: center; font-size: 13.5pt; font-weight: bold; margin-bottom: 12px;'>Reports & System</div>", unsafe_allow_html=True)
     if st.button("Reports/Queries", use_container_width=True): st.session_state.view_mode_override = "Reports/Queries"; st.rerun()
-    if st.button("Fleet Health", use_container_width=True): st.session_state.view_mode_override = "Fleet Health"; st.rerun()
-    if st.button("Monty Python", use_container_width=True): st.session_state.view_mode_override = "Monty Python"; st.rerun()
-    if st.button("Warranty Tracking", use_container_width=True): st.session_state.view_mode_override = "Warranty Tracking"; st.rerun()
+    if st.button("Philosophy", use_container_width=True): st.session_state.view_mode_override = "Monty Python"; st.rerun()
+    if st.button("A Pound of Cure", use_container_width=True): st.session_state.view_mode_override = "Pound of Cure"; st.rerun()
+    if st.button("Audit Readiness", use_container_width=True): st.session_state.view_mode_override = "Audit Road"; st.rerun()
     if st.button("Back Up Database", use_container_width=True):
         try: st.success(f"Backup saved: {os.path.basename(backup_database())}")
         except Exception as e: st.error(f"Backup failed: {e}")
@@ -4063,7 +5400,7 @@ if view_mode == "Switchboard":
   # First-run welcome: shown only while the database has no assets at all
   if is_empty_install():
     st.info("**Welcome to An Ounce of Prevention.** Your database is empty. Add your own equipment under "
-            "**Asset Groups**, or load the sample data (19 asset groups, about 100 example units with "
+            "**Asset Groups**, or load the sample data (dozens of asset groups and example units with "
             "checklists and maintenance tasks) to see how everything works. You can start fresh later by "
             "using a new, empty data folder.")
     if st.button("Load Sample Data", key="btn_load_sample"):
@@ -4085,8 +5422,11 @@ elif view_mode == "System Architecture":
   st.markdown("A picture of where **An Ounce of Prevention** sits between the equipment on the floor and the business systems around it. "
               "Solid boxes work today; dashed items are planned and are **not** part of version 1. Hover over any box for a short explanation.")
   components.html(ARCH_HTML, height=1180, scrolling=True)
+  st.markdown("---")
+  st.markdown("**Preparing for audits?** See *Audit Readiness* on the Switchboard (Reports & System column).")
+  if st.button("Open Audit Readiness", key="arch_to_road"): st.session_state.view_mode_override = "Audit Road"; st.rerun()
 elif view_mode == "Fleet Health":
-  st.subheader("📊 Fleet Health & Maintenance Guide")
+  st.subheader("📊 Industrial Asset Health and Maintenance")
   
   with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
       trucks_df = pd.read_sql('SELECT Maintenance_Protocol, Total_Maintenance_Spend FROM "Trucks"', conn)
@@ -4134,6 +5474,21 @@ elif view_mode == "Users & Security":
   _mode = get_login_mode()
   if _mode != "on" or st.session_state.get("auth_role") == "admin":
     render_license_panel()
+  if (_mode != "on" or st.session_state.get("auth_role") == "admin") and get_setting("audit_features", "0") != "1":
+    st.caption("An optional audit trail (who did what, and when) is available. Turn it on under Audit Readiness on the Switchboard.")
+  if (_mode != "on" or st.session_state.get("auth_role") == "admin") and get_setting("audit_features", "0") == "1":
+    with st.expander("🧾 Audit trail: who did what, and when (latest 300 entries)", expanded=False):
+      st.caption("Records task sign-offs, breakdown records and incident log saves, with the user and the time. Edits to assets, task schedules and parts are not logged yet. "
+                 "With login off, the user shows as '(login off)'. This helps you show auditors what changed; it does not make anyone certified.")
+      try:
+        with sqlite3.connect(DB_PATH, timeout=20.0) as _ac:
+          _alog = pd.read_sql('SELECT WhenTS AS "When", UserName AS "User", Action, TableName AS "Table", RecordKey AS "Record", Detail FROM "Audit_Log" ORDER BY LogID DESC LIMIT 300', _ac)
+        if _alog.empty: st.caption("Nothing logged yet.")
+        else:
+          st.dataframe(_alog, use_container_width=True, hide_index=True)
+          st.download_button("Download audit trail (CSV)", data=_alog.to_csv(index=False).encode("utf-8"), file_name="audit_trail.csv", mime="text/csv", key="dl_audit_trail")
+      except Exception as _ae:
+        st.caption(f"The audit trail could not be read: {_ae}")
   if _mode == "on" and st.session_state.get("auth_role") != "admin":
     st.error("Only administrators can manage users.")
   elif _mode != "on":
@@ -4543,25 +5898,829 @@ elif view_mode == "Parts Inventory":
       st.caption("Newest first; the most recent 500 movements are shown.")
 
 elif view_mode == "Monty Python":
-  title_row("🎬 Monty Python Viewing Area", "btn_sw_page7")
-  st.markdown("#### What have the Romans ever done for us?")
-  
-  vid_col1, vid_col2, vid_col3 = st.columns(3)
-  with vid_col1:
-      st.video("https://www.youtube.com/watch?v=cOKR2m1URe8") # The Romans
-  with vid_col2:
-      st.video("https://www.youtube.com/watch?v=-8bqQ-C1PSE") # Anarcho-Syndicalist Commune
-  with vid_col3:
-      st.video("https://www.youtube.com/watch?v=uyVPAlQQp5k") # Argument Clinic
+  title_row("🧭 Philosophy and Laughter", "btn_sw_page7")
+  def _mp_video(url, caption, start=0):
+    _va, _vb, _vc = st.columns([1, 2, 1])
+    with _vb:
+      st.video(url, start_time=start)
+      st.caption(caption)
 
-  vid_col4, vid_col5, _vid_col6 = st.columns(3)
-  with vid_col4:
-      st.video("https://www.youtube.com/watch?v=kRwCPUEND1U", start_time=40) # The Black Knight
-  with vid_col5:
-      st.video("https://www.youtube.com/watch?v=XgchpzSaYJA") # Life of Brian: Beatitudes, Stoning, Lepper
+  _MP_VIDS = [
+    ("https://www.youtube.com/watch?v=cOKR2m1URe8", "The Romans", 0),
+    ("https://www.youtube.com/watch?v=-8bqQ-C1PSE", "Anarcho-Syndicalist Commune", 0),
+    ("https://www.youtube.com/watch?v=uyVPAlQQp5k", "Argument Clinic", 0),
+    ("https://www.youtube.com/watch?v=kRwCPUEND1U", "The Black Knight", 40),
+    ("https://www.youtube.com/watch?v=XgchpzSaYJA", "Life of Brian", 0),
+  ]
+  _SIX_DEFAULT = ("A favorite song, played loud\nA game of crib or a quick game of chess with someone\n"
+                  "A call or a text to someone\nOne funny video\nA hot shower\nA short stretch, or tea on the porch")
+  with st.expander("🎲 Roll the dice: pick your reward after something dull or hard", expanded=False):
+    st.caption("Keep a list of six things that bring you joy, ideally ones that also make someone else happy. Edit the list any time; it is saved.")
+    _six_saved = get_setting("six_joys", _SIX_DEFAULT)
+    _six_txt = st.text_area("My six joys (one per line)", value=_six_saved, height=170, key="six_joys_txt")
+    if _six_txt != _six_saved:
+      try: set_setting("six_joys", _six_txt)
+      except Exception: st.caption("Could not save the list right now.")
+    _rc1, _rc2 = st.columns(2)
+    with _rc1:
+      if st.button("🎲 Roll the dice", key="btn_roll_dice", use_container_width=True):
+        _items = [_l.strip() for _l in _six_txt.splitlines() if _l.strip()][:6]
+        if _items:
+          _n = random.randint(1, len(_items))
+          st.session_state["dice_result"] = (_n, _items[_n - 1])
+        else:
+          st.session_state["dice_result"] = None
+    with _rc2:
+      if st.button("🎬 Pick a random video", key="btn_roll_video", use_container_width=True):
+        st.session_state["dice_video"] = random.choice(_MP_VIDS)
+    _dr = st.session_state.get("dice_result")
+    if _dr: st.success(f"You rolled a {_dr[0]}: {_dr[1]}. Eyes open: you earned it.")
+    _dv = st.session_state.get("dice_video")
+    if _dv:
+      st.caption(f"Today's pick: {_dv[1]}")
+      st.video(_dv[0], start_time=_dv[2])
+
+  # ---- Habit builder: pick a habit, start tiny, count the days ----
+  _HABITS = [
+    ("Morning pause", "One minute of quiet before the day. Three slow breaths, then name one thing you will do well today.", "Five minutes of quiet, prayer or reflection, then name your one priority for the day."),
+    ("Midday pause", "Stop for one minute at midday. Put the work down and breathe.", "Three minutes away from the work: step outside, breathe, check how you are doing."),
+    ("Nightly review", "Three lines before bed: one thing that went well, one thing to fix, one thing you are thankful for.", "Review the day for five minutes, keep the log short and honest, then set tomorrow's top three."),
+    ("Daily walk", "Put on your shoes and step outside. That counts.", "Walk 20 to 30 minutes, outside if you can."),
+    ("Water first thing", "Drink one glass of water before anything else.", "A glass of water on waking and another with each meal."),
+    ("Stretch or mobility", "Two minutes of gentle stretching.", "Ten minutes of stretching or easy movement."),
+    ("Moving meditation", "Three slow, deliberate movements with full attention: a stretch, a tai chi form, a slow kata.", "Ten to twenty minutes of tai chi, qigong, yoga or a martial-arts form, with full attention."),
+    ("Sitting meditation", "One minute, eyes closed, counting breaths to ten.", "Ten minutes of quiet sitting. When the mind wanders, return to the breath."),
+    ("Learn something", "Read or study for five minutes.", "Fifteen to thirty minutes of study, or practice of a skill you care about."),
+    ("Reach out", "Send one text or make one call to someone you care about.", "A proper conversation with someone each day, in person if you can."),
+    ("Three good things", "Write down one thing that went well today.", "Write three things that went well, and why."),
+    ("Tidy up", "Clear one surface.", "Ten minutes to tidy your workspace or home."),
+    ("Screens off, early bed", "Put the phone down ten minutes earlier than usual.", "Screens off an hour before bed, and a regular bedtime."),
+    ("One more vegetable", "Add one vegetable or piece of fruit to a meal.", "Vegetables with two meals a day."),
+    ("Act of kindness", "Do one small kind thing for someone, unasked.", "One real act of giving each day: time, help or a kind word."),
+    ("Plan the day", "Write down the one thing that must get done.", "Write your top three at the start of the day and check them off at the end."),
+    ("Craft or skill practice", "Ten minutes on a craft or skill, such as welding, music or writing.", "Fifteen to thirty minutes of focused practice, with a small goal each time."),
+    ("Sentence completion", "Finish one sentence stem three ways in the Private journal.", "Five to ten minutes each morning: one stem, six or more endings, no editing. Do not reread until the weekend."),
+    ("Free association", "Write for two minutes without stopping or editing.", "Five to ten minutes of free writing, then read it back and note one surprise. If it stirs up something painful, stop and talk with someone you trust."),
+    ("Strengths check-in", "Tick which kinds of smarts you used today (Strengths lens, Philosophy page).", "Each evening, tick them, and once a week look at the least-used one and try something small with it."),
+    ("Listen to understand", "Ask one person one real question and listen without fixing or advising.", "One conversation a day where you reflect back what you heard before you reply, and guess what the other person feels."),
+    ("Compassion minute", "Three slow breaths while silently wishing someone well.", "Five to ten minutes of loving-kindness: wish well to someone you love, someone neutral, someone difficult, and yourself."),
+    ("Back and neck routine", "Ten chin tucks at your desk, slowly.", "Ten to fifteen minutes: a walk, chin tucks, neck and shoulder loosening, then bird-dog, side plank and glute bridge. Stop at sharp pain, numbness or tingling."),
+    ("Think sideways", "Once today, ask 'what else could this be?' about something you are working on.", "Ten minutes a week on a stuck problem: random word, provocation or the six hats (Philosophy page), then sleep on it."),
+    ("Think it through with a partner", "Once a day, take one question or stuck point to a thinking partner (a friend, a mentor or an AI) and write one line on what you took from it.", "Take one real question a day to a thinking partner. Ask them to push back, not just agree. Write one line on what you will do differently, and do it. Thinking partners supplement people, they do not replace them."),
+    ("Mood check-in", "Rate your mood from 1 to 10 and pick one word for it.", "Rate mood, sleep and energy from 1 to 10 each day and look for patterns each week. If you stay low for two weeks, talk to a doctor."),
+    ("Urge pause", "When an urge hits (a drink, a smoke, a scroll), wait ten minutes and do something else first.", "Name the urge, wait ten minutes, move your body, then decide. This is a coping skill, not a treatment: if you are fighting an addiction, get medical help."),
+  ]
+  _BIG_HABITS = {"Daily walk", "Learn something", "Stretch or mobility", "Tidy up", "Reach out"}   # everything else is a tiny habit
+  _BUDGET, _BIG_COST, _BIG_MAX = 7, 2, 3   # a tiny habit costs 1 point, a bigger one 2; 7 points in all, and no more than 3 bigger
+
+  def _habit_load():
+    try: _d = json.loads(get_setting("habit_tracker", "[]"))
+    except Exception: _d = []
+    return _d if isinstance(_d, list) else []
+
+  def _habit_save(_d):
+    try: set_setting("habit_tracker", json.dumps(_d))
+    except Exception: st.caption("Could not save right now.")
+
+  _hb_open = bool(st.session_state.get("hb_open", False))   # stays True while you are on this page, cleared when you leave
+  if _hb_open and st.session_state.pop("hb_scroll", False):
+    components.html("""<script>
+      setTimeout(function(){ try { var d = window.parent.document; var els = d.querySelectorAll('summary');
+        for (var i = 0; i < els.length; i++) { if (els[i].textContent.indexOf('Habit builder') > -1) { els[i].scrollIntoView({behavior:'smooth', block:'start'}); break; } } } catch(e) {} }, 600);
+    </script>""", height=0)
+  with st.expander("🌱 Habit builder: pick a habit and grow it, one small day at a time", expanded=_hb_open):
+    st.markdown("<span class='hb-marker'></span>", unsafe_allow_html=True)
+    st.caption("Habits take about two months to settle on average, with a wide range from person to person. "
+               "So start tiny: week one is the smallest version, then the full version. Think of it as seven points: a tiny habit costs one, a bigger one costs two (so, for example, seven tiny, or three bigger plus one tiny). "
+               "Miss a day? Just do the next one; one miss does not undo it.")
+    from datetime import date as _hdate
+    _hab = _habit_load()
+    _today_hs = _hdate.today().isoformat()
+    def _hgrp(_hh): return _hh.get("grp") or ("big" if _hh.get("name") in _BIG_HABITS else "tiny")
+    _n_big = sum(1 for _hh in _hab if _hgrp(_hh) == "big")
+    _n_tiny = len(_hab) - _n_big
+    _load = _n_tiny + _BIG_COST * _n_big
+    st.markdown(f"**Habit load {_load} of {_BUDGET}** · {_n_tiny} tiny (1 point each) · {_n_big} bigger (2 points each)")
+    for _hi, _h in enumerate(_hab):
+      try: _hday = (_hdate.today() - _hdate.fromisoformat(_h.get("start", _today_hs))).days + 1
+      except Exception: _hday = 1
+      _hdone = _h.get("done", [])
+      _hname = _h.get("name", "Habit")
+      _hc0, _hcp, _hc1, _hc2 = st.columns([4, 3, 2, 1])
+      with _hc0:
+        st.markdown(f"**{_hname}** · day {_hday} · done on {len(_hdone)} day{"" if len(_hdone)==1 else "s"}")
+        st.caption(("Tiny version: " + _h.get("tiny", "")) if _hday <= 7 else ("Full version: " + _h.get("full", _h.get("tiny", ""))))
+      with _hcp:
+        _hpct = min(len(_hdone), 60) / 60 * 100
+        _hfill = max(_hpct, 4) if _hdone else 0
+        st.markdown(f"<div style='margin-top:6px; height:20px; background:#e9ecef; border:2px solid #1e8449; border-radius:10px; overflow:hidden;'>"
+                    f"<div style='width:{_hfill:.1f}%; height:100%; background:linear-gradient(90deg,#27ae60,#1e8449);'></div></div>"
+                    f"<div style='font-size:0.85rem; text-align:center; margin-top:2px;'>{len(_hdone)} of 60 days</div>", unsafe_allow_html=True)
+        if _hday > 60: st.caption("Past two months. Keep it or swap it.")
+      with _hc1:
+        if _today_hs in _hdone:
+          st.markdown("<div style='text-align:center; padding:6px; background:#d4edda; border-radius:6px; color:#155724; font-weight:600;'>Done today ✓</div>", unsafe_allow_html=True)
+        elif st.button("✅ Done today", key=f"hab_done_{_hi}", use_container_width=True):
+          _hdone.append(_today_hs)
+          _h["done"] = _hdone
+          _cnt = len(_hdone)
+          _rew = _h.get("rewarded", [])
+          if _cnt in (7, 21, 60) and _cnt not in _rew:
+            _joys = [_l.strip() for _l in get_setting("six_joys", _SIX_DEFAULT).splitlines() if _l.strip()][:6]
+            if _joys:
+              _hn = random.randint(1, len(_joys))
+              _h["last_reward"] = f"{_cnt} days of {_hname}! You rolled a {_hn}: {_joys[_hn - 1]}. Eyes open: you earned it."
+            else:
+              _h["last_reward"] = f"{_cnt} days of {_hname}! Well done."
+            _rew.append(_cnt)
+            _h["rewarded"] = _rew
+          _hab[_hi] = _h
+          _habit_save(_hab)
+          st.rerun()
+      with _hc2:
+        if st.button("✕", key=f"hab_rm_{_hi}", help="Remove this habit", use_container_width=True):
+          _hab.pop(_hi)
+          _habit_save(_hab)
+          st.rerun()
+      if _h.get("last_reward"): st.info(_h["last_reward"])
+    _tiny_ok, _big_ok = _load + 1 <= _BUDGET, (_load + _BIG_COST <= _BUDGET and _n_big < _BIG_MAX)
+    if _tiny_ok or _big_ok:
+      _taken = [_h.get("name") for _h in _hab]
+      _gopts = (["Tiny habit (a minute or two)"] if _tiny_ok else []) + (["Bigger habit (takes real time or effort)"] if _big_ok else [])
+      _gpick = st.radio("Kind of habit", _gopts, horizontal=True, key="hab_grp")
+      _gkey = "big" if _gpick.startswith("Bigger") else "tiny"
+      _hopts = [_x[0] for _x in _HABITS if _x[0] not in _taken and ((_x[0] in _BIG_HABITS) == (_gkey == "big"))] + ["My own habit"]
+      _hpick = st.selectbox("Choose a habit", _hopts, key="hab_pick")
+      _hmatch = [_x for _x in _HABITS if _x[0] == _hpick]
+      if _hmatch:
+        _hnm, _htiny, _hfull = _hmatch[0]
+        st.caption("Tiny version: " + _htiny)
+        st.caption("Full version: " + _hfull)
+      else:
+        _hnm = st.text_input("Name your habit", key="hab_own_name")
+        _htiny = st.text_input("The tiniest version of it (so small it feels silly not to do it)", key="hab_own_tiny")
+        _hfull = "Your habit, in the full version you want."
+      if st.button("Start this habit", key="hab_start", use_container_width=True):
+        if str(_hnm).strip():
+          _hab.append({"name": str(_hnm).strip(), "tiny": str(_htiny).strip() or "Do the smallest version.", "full": _hfull, "start": _today_hs, "done": [], "rewarded": [], "grp": _gkey})
+          _habit_save(_hab)
+          st.rerun()
+        else:
+          st.warning("Give the habit a name first.")
+    else:
+      st.caption("You are at the limit. Remove a habit to add another.")
+
+  # ---- Strengths lens (Gardner) and Think sideways (de Bono) ----
+  _INTEL = [
+    ("Linguistic (words)", "Write a page, read aloud, learn a new word, tell a story."),
+    ("Logical-mathematical", "Solve a puzzle, estimate a number, plan with a spreadsheet, test an idea."),
+    ("Spatial", "Sketch it, build a model, read a map, imagine it turned around."),
+    ("Musical", "Listen closely, hum or play, notice rhythm in work and speech."),
+    ("Bodily-kinesthetic (hands and movement)", "Build, weld, walk, dance, practise a craft or sport."),
+    ("Interpersonal (people)", "Listen until someone feels understood, teach, help, work with others."),
+    ("Intrapersonal (self-knowledge)", "Nightly review, journal, sit quietly, ask why you did it."),
+    ("Naturalist (living things and patterns)", "Walk outside, name plants or birds, garden, notice the seasons."),
+  ]
+  with st.expander("🧠 Strengths lens: which kinds of smarts did I use today?", expanded=False):
+    st.caption("Howard Gardner (Frames of Mind, 1983) [B4] described several kinds of intelligence. Use this as a lens for noticing your strengths and the ones you neglect, "
+               "not as a test or a score: many psychologists doubt the intelligences are separate, measurable abilities, and the theory is debated. "
+               "Skills grow with practice. Tick what you used today and look at the last 30 days.")
+    try: _il = json.loads(get_setting("intel_log", "[]"))
+    except Exception: _il = []
+    if not isinstance(_il, list): _il = []
+    _il_today = _date.today().isoformat()
+    _il_names = [_n for _n, _h in _INTEL]
+    _il_pick = st.multiselect("Used today (pick any)", _il_names, key="intel_pick")
+    if st.button("Save today", key="intel_save"):
+      _il = [_e for _e in _il if isinstance(_e, dict) and _e.get("d") != _il_today] + [{"d": _il_today, "u": list(_il_pick)}]
+      _il = _il[-120:]
+      try: set_setting("intel_log", json.dumps(_il))
+      except Exception: st.caption("Could not save right now.")
+      st.success("Saved.")
+    _il_cut = (_date.today() - _timedelta(days=30)).isoformat()
+    _il_recent = [_e for _e in _il if isinstance(_e, dict) and str(_e.get("d", "")) >= _il_cut]
+    if _il_recent:
+      _il_counts = {_n: sum(1 for _e in _il_recent if _n in _e.get("u", [])) for _n in _il_names}
+      st.bar_chart(pd.Series(_il_counts))
+      _il_least = min(_il_counts, key=lambda _k: _il_counts[_k])
+      _il_hint = dict(_INTEL).get(_il_least, "")
+      st.write(f"Least used in the last 30 days: **{_il_least}**. A small idea: {_il_hint}")
+    else:
+      st.caption("Nothing logged yet. Save a day to see your 30-day picture.")
+    if st.checkbox("Show the eight, and one way to use each", key="intel_show"):
+      for _n, _h in _INTEL: st.markdown(f"- **{_n}:** {_h}")
+      st.caption("Gardner's first list had seven (the first seven above); he later added the naturalist and has considered an existential one. A lens, not a measurement.")
+
+  _RANDOM_WORDS = ["anchor", "bridge", "candle", "compass", "drum", "engine", "feather", "gate", "harbour", "island", "kettle", "ladder", "magnet", "needle",
+                   "orchard", "pendulum", "quilt", "river", "spring", "tide", "umbrella", "valve", "windmill", "zipper", "balloon", "bucket", "clock", "dam",
+                   "elevator", "fence", "glacier", "hammer", "ice", "jar", "key", "lighthouse", "mirror", "net", "ocean", "paddle", "radio", "sieve", "teapot",
+                   "ant", "bee", "cloud", "dice", "echo", "fountain", "garden", "honey", "kite", "lantern", "map", "nest", "oven", "parachute"]
+  _PO = ["PO: what if the problem were the opposite of what it is?", "PO: what if the most important part were removed?",
+         "PO: what if it had to work with no money?", "PO: what if a child had to solve it?",
+         "PO: what if it had to be ten times bigger, or ten times smaller?", "PO: what if the person it is for did the work instead?",
+         "PO: what if it had to happen in one hour?", "PO: what if we did it backwards, from the end to the start?",
+         "PO: what if the rule everyone follows did not exist?", "PO: what if nature already solved this? How?"]
+  _HATS = [("White hat: facts", "What do I actually know? What do I still need to find out?"),
+           ("Red hat: feelings", "What does my gut say? Say it without having to justify it."),
+           ("Black hat: caution", "What could go wrong? What are the risks and the weak points?"),
+           ("Yellow hat: benefits", "What is good about this? Why might it work?"),
+           ("Green hat: new ideas", "What else could it be? What are some different ways, however odd?"),
+           ("Blue hat: the process", "What are we trying to do? What is the next step in the thinking?")]
+  _TALK = {
+    "Habits": ["I am trying to build this habit: [habit]. It keeps failing at [point]. What is a smaller version, and what could I attach it to?",
+               "Here is my habit log for the last month: [counts]. What patterns do you see, and what would you change? Please push back if my plan is unrealistic."],
+    "Goals": ["My goal is [goal]. What am I not seeing? Ask me three hard questions before giving advice.",
+              "Argue the other side: why might this goal be the wrong one for me? Then help me break the right one into steps small enough to finish in a week."],
+    "Relationships": ["I need to have a hard conversation with [person] about [topic]. Play that person, push back realistically, and then tell me what I could say better.",
+                      "Here is a conflict from my side: [story]. Now tell me how the other person might see it, with no taking sides."],
+    "Skills": ["I want to get better at [skill]. I have [time] per week. Design a practice plan aimed at my weakest spot and tell me how I will know I am improving.",
+               "Which of Gardner's eight kinds of smarts do I use least ([your chart])? Suggest one small way to use it this week, and be honest that it is a lens, not a test."],
+    "Monthly review": ["Here is my month: habits done [counts], strengths used most and least [chart], goals and progress [notes]. Do not just agree with me. What patterns do you see, what should I keep, shrink or drop, and what am I not seeing? End with one small action involving a real person."],
+  }
+  with st.expander("💬 Talk it over: questions to take to a thinking partner", expanded=False):
+    ask_claude("Ask Claude to be your thinking partner", "I would like to talk something over with a thinking partner. Please ask me one question at a time, listen, and help me see my options without telling me what to do. The topic is: ")
+    st.caption("A thinking partner can be a friend, a mentor, a counsellor or an AI. These are copy-and-paste starters: fill in the [brackets] and ask it to push back, not just agree. "
+               "It can be wrong or flattering, so you decide what to do with its answer. It supplements real people, it does not replace them. "
+               "Do not paste your Private journal into any online service, and do not paste passwords or account numbers. Not medical advice: for health or mood problems, see a doctor or counsellor first.")
+    _talk_pick = st.selectbox("What do you want to talk over?", list(_TALK.keys()), index=len(_TALK) - 1, key="talk_pick")
+    for _tp in _TALK[_talk_pick]: st.code(_tp, language=None)
+    st.caption("Once a month is plenty for the review, and you can skip a month. Finish with a small reward from your six joys.")
+
+  with st.expander("💡 Think sideways: spark an idea (de Bono's lateral thinking)", expanded=False):
+    st.caption("Edward de Bono (Lateral Thinking, 1970; Six Thinking Hats, 1985) [B3] taught that the usual way of thinking digs deeper in the same hole, and that "
+               "creativity needs deliberate sideways moves: random entry, provocation and challenging assumptions. It is widely taught and many people find it useful; "
+               "controlled research on it is thin, so treat it as a toolkit, not a guarantee. Pair it with immersion in the problem and then a rest: insights often arrive after.")
+    st.text_input("The problem, or the thing you are stuck on", key="lat_problem")
+    _lat_c1, _lat_c2 = st.columns(2)
+    with _lat_c1:
+      if st.button("🎲 Random word", key="lat_rand", use_container_width=True):
+        _w = random.choice(_RANDOM_WORDS)
+        st.session_state["lat_out"] = f"Random word: **{_w}**. How could '{_w}' be like your problem, or help with it? List three ways, however silly. Then pick the one with a real seed in it."
+    with _lat_c2:
+      if st.button("🔀 Provocation (PO)", key="lat_po", use_container_width=True):
+        st.session_state["lat_out"] = random.choice(_PO) + " Do not judge it. Ask: what does this lead to?"
+    if st.session_state.get("lat_out"): st.info(st.session_state["lat_out"])
+    _hat = st.selectbox("Or look at it through one of the six thinking hats", [_h[0] for _h in _HATS], key="lat_hat")
+    for _hn, _ht in _HATS:
+      if _hn == _hat: st.write(_ht)
+    st.caption("Also try: challenge an assumption (why is it done this way?), list ten alternatives before choosing, and sleep on it.")
+    st.markdown("**Try the opposite when you are trying too hard.** The psychiatrist Viktor Frankl [B22] noticed that fear can bring about what we fear, and that trying too hard blocks what we want. "
+                "His technique, *paradoxical intention*, is to aim, for a moment and with a smile, at the very thing you dread. For nights when you lie awake worrying about not sleeping, "
+                "that means giving up the effort to fall asleep and simply staying quietly awake and relaxed; the pressure often eases. "
+                "A version of this is used in treatment for insomnia, with modest evidence for it. *Emerging.* It is a short-term trick, not a cure, and long-lasting sleep trouble, severe anxiety or panic deserves a doctor.")
+
+  # ---- Private journal: locked with your passphrase, kept in its own encrypted file, never in the main database ----
+  _PJ_STEMS = [
+    "Living consciously to me means...",
+    "If I bring 5 percent more awareness to my day...",
+    "If any of what I wrote this week is true, it would be helpful if I...",
+    "If I paid a little more attention to how I feel today, I would...",
+    "One thing I keep avoiding looking at is...",
+    "If I took a little more responsibility for my day, I would...",
+    "Something I am proud of but rarely admit is...",
+    "If I spoke up honestly more often, I might...",
+    "What I would do if I were not afraid of looking foolish is...",
+    "The kind of person I am becoming is...",
+    "One small promise I could keep to myself this week is...",
+    "When I get angry, underneath it I often feel...",
+    "If I treated myself the way I treat a good friend, I would...",
+    "What gives my work meaning is...",
+  ]
+  try:
+    from cryptography.fernet import Fernet as _Fernet
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM as _AESGCM
+    _PJ_OK = True
+  except Exception:
+    _PJ_OK = False
+  _PJ_FILE = os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), "private_journal.enc")
+
+  def _pj_key(_pw, _salt):
+    _raw = hashlib.scrypt(_pw.encode("utf-8"), salt=_salt, n=2**14, r=8, p=1, maxmem=64 * 1024 * 1024, dklen=32)
+    return base64.urlsafe_b64encode(_raw)
+
+  _PJ_AAD = b"ounce-journal-v2"
+  def _pj_enc(_k, _data, _v):
+    """Version 2 = AES-256-GCM (the session key is the 32-byte scrypt output, base64 encoded). Version 1 (older test files) = Fernet (AES-128)."""
+    if _v >= 2:
+      _n = os.urandom(12)
+      return base64.b64encode(_n + _AESGCM(base64.urlsafe_b64decode(_k)).encrypt(_n, _data, _PJ_AAD)).decode()
+    return _Fernet(_k).encrypt(_data).decode()
+  def _pj_dec(_k, _tok, _v):
+    if _v >= 2:
+      _raw = base64.b64decode(_tok)
+      return _AESGCM(base64.urlsafe_b64decode(_k)).decrypt(_raw[:12], _raw[12:], _PJ_AAD)
+    return _Fernet(_k).decrypt(_tok.encode())
+
+  def _pj_read():
+    try:
+      with open(_PJ_FILE, "r", encoding="utf-8") as _f: return json.load(_f)
+    except Exception: return None
+
+  def _pj_write(_d):
+    _tmp = _PJ_FILE + ".tmp"
+    with open(_tmp, "w", encoding="utf-8") as _f: json.dump(_d, _f)
+    os.replace(_tmp, _PJ_FILE)
+
+  def _pj_create():
+    _pw = st.session_state.get("pj_new_pw", ""); _pw2 = st.session_state.get("pj_new_pw2", "")
+    if len(_pw) < 8: st.session_state["pj_msg"] = "Use at least 8 characters."; return
+    if _pw != _pw2: st.session_state["pj_msg"] = "The two passphrases do not match."; return
+    if not st.session_state.get("pj_ack"): st.session_state["pj_msg"] = "Please tick the box to confirm you understand."; return
+    try:
+      _salt = os.urandom(16); _k = _pj_key(_pw, _salt)
+      _pj_write({"v": 2, "salt": base64.b64encode(_salt).decode(), "check": _pj_enc(_k, b"ok", 2), "entries": []})
+    except Exception as _e:
+      st.session_state["pj_msg"] = f"Could not create the journal: {_e}"; return
+    st.session_state["pj_key"] = _k
+    st.session_state["pj_new_pw"] = ""; st.session_state["pj_new_pw2"] = ""; st.session_state["pj_msg"] = ""
+
+  def _pj_unlock():
+    _d = _pj_read(); _pw = st.session_state.get("pj_pw", "")
+    try:
+      _k = _pj_key(_pw, base64.b64decode(_d["salt"]))
+      _v = _d.get("v", 1)
+      _pj_dec(_k, _d["check"], _v)
+      if _v < 2:   # upgrade an older journal (AES-128) to AES-256, checking every entry reads back before the file is replaced
+        _new = {"v": 2, "salt": _d["salt"], "check": _pj_enc(_k, b"ok", 2), "entries": []}
+        for _t in _d.get("entries", []):
+          _plain = _pj_dec(_k, _t, 1)
+          _tok2 = _pj_enc(_k, _plain, 2)
+          if _pj_dec(_k, _tok2, 2) != _plain: raise ValueError("upgrade check failed")
+          _new["entries"].append(_tok2)
+        _pj_write(_new)
+    except Exception:
+      time.sleep(1)
+      st.session_state["pj_msg"] = "That passphrase did not open the journal."; st.session_state["pj_pw"] = ""; return
+    st.session_state["pj_key"] = _k; st.session_state["pj_pw"] = ""; st.session_state["pj_msg"] = ""
+
+  def _pj_lock():
+    st.session_state.pop("pj_key", None)
+    for _k in ("pj_sc_txt", "pj_fa_txt", "pj_pw"): st.session_state[_k] = ""
+    st.session_state["pj_msg"] = ""
+
+  def _pj_save(_kind, _txt_key, _stem_key=None):
+    _txt = st.session_state.get(_txt_key, "").strip(); _k = st.session_state.get("pj_key"); _d = _pj_read()
+    if not _txt: st.session_state["pj_msg"] = "Nothing to save yet."; return
+    if _k is None or _d is None: st.session_state["pj_msg"] = "The journal is locked."; return
+    try:
+      _payload = {"kind": _kind, "when": datetime.now().isoformat(timespec="minutes"),
+                  "stem": st.session_state.get(_stem_key, "") if _stem_key else "", "text": _txt}
+      _d["entries"].append(_pj_enc(_k, json.dumps(_payload).encode("utf-8"), _d.get("v", 1)))
+      _pj_write(_d)
+    except Exception as _e:
+      st.session_state["pj_msg"] = f"Could not save: {_e}"; return
+    st.session_state[_txt_key] = ""; st.session_state["pj_msg"] = "Saved and locked away."
+
+  def _pj_delete(_i):
+    _d = _pj_read()
+    try:
+      if _d is not None and 0 <= _i < len(_d["entries"]):
+        _d["entries"].pop(_i); _pj_write(_d)
+    except Exception as _e:
+      st.session_state["pj_msg"] = f"Could not delete: {_e}"
+
+  with st.expander("🔒 Private journal: sentence completion and free association (passphrase protected)", expanded=False):
+    st.caption("Know thyself. Two classic self-reflection exercises, kept private. Each entry is encrypted with a key made from your passphrase and saved "
+               "in its own file (private_journal.enc, beside your database), never in the main database, so exports, copies and demo builds do not contain it. "
+               "This is self-reflection, not therapy and not medical advice. If something painful comes up, stop and talk with a counsellor or someone you trust.")
+    st.markdown("**Why this is locked, and why that matters.** Free association only works if you can write whatever comes, "
+                "including the unfair, angry, silly or frightening thoughts, without editing yourself. That takes knowing nobody else can read it. "
+                "So the journal stays **on your own computer**, is **never sent anywhere**, and is **encrypted** with a key made from your passphrase. "
+                "Entries are encrypted with **AES-256**, the same cipher that PGP/GnuPG commonly uses for the data itself and that banks and governments rely on, with the key stretched from your passphrase by scrypt. "
+                "(PGP adds public-key tools for sharing messages, which a private journal does not need.) "
+                "Without the passphrase, no known method can read it: the encryption itself is not the weak point. The realistic ways in are a short or guessable passphrase "
+                "(use several random words), or someone sitting at your screen while it is unlocked, so lock it when you finish. "
+                "Writing a thought down and seeing it on the page is itself a kind of prevention: it is hard to act on something you have looked at honestly first. "
+                "**Odd thoughts are normal.** Most people have strange, unwelcome or even alarming thoughts that come out of nowhere now and then (surveys across many countries find it is almost everyone), "
+                "and having one says nothing bad about your character. Writing it down is not a confession. It often looks smaller, and a bit absurd, once it is on the page, and "
+                "writing about what is on your mind has modest benefits for many people. *Emerging.* "
+                "If thoughts of harming yourself or someone else keep coming back, or frighten you, talk to a doctor or counsellor; in Canada you can call or text 988 any time, and in an emergency call 911.")
+    if not _PJ_OK:
+      st.warning("The private journal needs one extra Python package. Close the app, open a command window and run: pip install cryptography. "
+                 "Then start the app again. Until then nothing can be saved here, so nothing is ever stored unprotected.")
+    else:
+      _pj_exists = os.path.exists(_PJ_FILE); _pj_data = _pj_read()
+      if _pj_exists and _pj_data is None:
+        st.error("The journal file exists but could not be read. Do not create a new one. Copy private_journal.enc somewhere safe first, then ask for help.")
+      elif _pj_data is None:
+        st.markdown("**Set up your private journal.** Choose a passphrase you will remember.")
+        st.warning("If you forget the passphrase, the entries cannot be recovered by anyone, including me. Do not type it into a chat. "
+                   "Keep a copy somewhere safe, such as a sealed note in a safe place.")
+        st.text_input("Passphrase (at least 8 characters)", type="password", key="pj_new_pw")
+        st.text_input("Type it again", type="password", key="pj_new_pw2")
+        st.checkbox("I understand that a lost passphrase cannot be recovered.", key="pj_ack")
+        st.button("Create my private journal", key="pj_create", on_click=_pj_create)
+        if st.session_state.get("pj_msg"): st.info(st.session_state["pj_msg"])
+      elif st.session_state.get("pj_key") is None:
+        st.text_input("Passphrase", type="password", key="pj_pw")
+        st.button("🔓 Unlock", key="pj_unlock", on_click=_pj_unlock)
+        if st.session_state.get("pj_msg"): st.info(st.session_state["pj_msg"])
+      else:
+        _pjc1, _pjc2 = st.columns([3, 1])
+        with _pjc1: st.success("Unlocked. It locks again when you leave this page, refresh, or press Lock.")
+        with _pjc2: st.button("🔒 Lock now", key="pj_lock", on_click=_pj_lock, use_container_width=True)
+        if st.session_state.get("pj_msg"): st.info(st.session_state["pj_msg"])
+        _pj_mode = st.radio("What would you like to do?", ["Sentence completion", "Free association", "Read my entries"], horizontal=True, key="pj_mode")
+        if _pj_mode == "Sentence completion":
+          st.selectbox("Pick a sentence stem", _PJ_STEMS, key="pj_stem")
+          st.caption("Finish the sentence at least six different ways, quickly, one ending per line. Do not think and do not edit. "
+                     "Odd or contradictory endings are fine. Method after Nathaniel Branden [B1], in our own stems.")
+          st.text_area("Your endings (one per line)", height=200, key="pj_sc_txt")
+          st.button("Save to my private journal", key="pj_sc_save", on_click=_pj_save, args=("Sentence completion", "pj_sc_txt", "pj_stem"))
+          st.caption("Then read them back. Which ending surprised you? Pick one small action.")
+        elif _pj_mode == "Free association":
+          st.caption("Write whatever comes to mind for five to ten minutes. Do not stop, correct or judge it. Nobody reads this. "
+                     "Afterwards, read it back and note one thing that surprised you.")
+          st.text_area("Write freely", height=260, key="pj_fa_txt")
+          st.button("Save to my private journal", key="pj_fa_save", on_click=_pj_save, args=("Free association", "pj_fa_txt"))
+        else:
+          _ents = []
+          for _ei, _tok in enumerate(_pj_data.get("entries", [])):
+            try: _ents.append((_ei, json.loads(_pj_dec(st.session_state["pj_key"], _tok, _pj_data.get("v", 1)).decode("utf-8"))))
+            except Exception: continue
+          if not _ents: st.caption("No entries yet.")
+          for _ei, _en in reversed(_ents):
+            st.markdown(f"**{_en.get('when', '')} · {_en.get('kind', '')}**")
+            if _en.get("stem"): st.caption(_en["stem"])
+            st.text(_en.get("text", ""))
+            st.button("Delete this entry", key=f"pj_del_{_ei}", on_click=_pj_delete, args=(_ei,))
+            st.markdown("---")
+
+  with st.expander("🌿 Recovery, mental health and the search for a better self: what the evidence says", expanded=False):
+    st.caption("Not medical advice. This is information with honest labels, not a treatment plan. If you or someone you know is struggling with alcohol, "
+               "drugs or low mood, start with a doctor or an addiction service. Withdrawal from alcohol and some drugs can be dangerous, so do not go it alone. "
+               "In Saskatchewan the HealthLine is 811; in the US the SAMHSA helpline is 1-800-662-4357.")
+    st.markdown("""
+Addiction and despair do a great deal of damage, and people are searching hard for what works. Here is where things stand, ranked by how good the evidence is.
+
+**1. Proven (the strongest evidence).** Medications for opioid addiction (methadone, buprenorphine, naltrexone), medications for alcohol (naltrexone, acamprosate), counselling such as cognitive behavioural therapy and motivational interviewing, peer support groups, and contingency management (small rewards for staying clean, which works especially well for stimulants and is Skinner's reinforcement idea put to good use). These are not glamorous, but they are what the best studies back. A doctor or addiction clinic can set them up.
+
+**2. Emerging (promising, still being tested).**
+- *Brain stimulation.* Deep transcranial magnetic stimulation was cleared by the US FDA in 2020 as an aid to quitting smoking, after a 262-person sham-controlled trial. The effect was modest. For opioid addiction, a 2020 review found only five small studies.
+- *Psychedelics.* Psilocybin, MDMA and ibogaine are all over the media and YouTube right now, with many personal stories of better mood, insight and even recovery from depression, trauma and addiction. Early trials of some are promising, but they are small, hard to run blind (people know when they have had a psychedelic), and the field has had setbacks: the FDA declined to approve MDMA-assisted therapy in 2024. Ibogaine is the most closely watched for addiction. In April 2026 an executive order directed US agencies to speed research and review of certain psychedelic therapies, including ibogaine, with 50 million US dollars for state-run research, and the FDA has allowed an early study of noribogaine, a relative of ibogaine, for alcohol use disorder to go ahead ([Newsweek](https://www.newsweek.com/what-is-ibogaine-trump-admin-fast-tracks-psychoactive-drug-for-approval-12239530)). That is a push to *study* it faster, not an approval. The experts quoted there warn that the evidence is still limited, that ibogaine can affect heart rhythm and has been linked to deaths, that its effects last more than a day, and that it belongs in a hospital with cardiac monitoring, never a do-it-yourself setting.
+
+**3. Unproven, not disproven.** Neuro-electric therapy (NET) is a small device with electrodes behind the ears, developed by the Scottish surgeon Dr Meg Patterson for addiction. Musicians including Pete Townshend and Eric Clapton were reported to have been helped, and those are personal accounts, not trials. Omni magazine's January 1983 article [B9] on her "black box" reported her claim that all but four of about 300 patients completed detox drug-free, which is a detox result, not a long-term one. Only half answered her follow-up survey, she herself warned the figures were probably too favourable, and a researcher asked for the missing test: electrodes fitted with the current off. When that kind of placebo-controlled trial was done (Gariti 1992, 18 patients) [B10], it found no difference. Better trials have never been run, so the honest label is *unproven, not disproven*. A consumer relaxation device descended from it, the SOTA Bio Tuner, is sold in Canada, and the maker's own guide [B15] says it is not a medical device, is not approved by any government agency, and does not claim to treat addiction.
+
+**An old idea about why people reach for drink and drugs.** The existential psychologist Rollo May (*Freedom and Destiny*) [B5] argued that many people use alcohol and drugs to escape the anxiety that comes with freedom, with having to choose and become someone, and that used as a crutch they close off imagination and possibility. He also criticised the idea that we have a right to feel good all the time. This is a philosophical and clinical view, not a trial result, but it fits what many people in recovery say: the hard part is the emptiness or pain underneath, which is still there when the substance goes.
+
+**Fromm's version: running from freedom into something that gives orders.** The psychoanalyst Erich Fromm [B20] argued in *Escape from Freedom* (1941) that freedom brings isolation and anxiety, and that many people cope by handing themselves over: to a strong leader or group, to conformity (becoming what everyone else is), or to anger. In *The Art of Loving* (1956) he added that people also try to ease the aloneness with drink, drugs, thrills or crowd excitement, which work for a while and leave the separateness unchanged. His answer was care, responsibility and real connection with other people, plus work and creating something of your own. Another theory, not a trial result, and a useful warning sign: if something promises to take your choices away, ask what it is asking you to stop feeling.
+
+**Frankl's version: the empty Sunday.** The psychiatrist Viktor Frankl [B22] described an "existential vacuum": a feeling that life has no content, which shows up first as boredom. He saw it when the busy week stopped (the "Sunday neurosis") and in people facing retirement or old age, and he argued that restlessness, depression, aggression and addiction often sit on top of it. People then chase power, money or pleasure instead of meaning. This is clinical observation and theory, not a trial result, and not every depression is a lack of meaning. The practical point matches the rest of this page: do not wait for the feeling to pass. Give the empty hours something that needs you.
+
+**The other half: becoming someone who can say no.** Medicine can help you stop. What makes stopping stick is a life worth staying clear for: a purpose, people who count on you, a body that feels better, something to do with your hands and mind. Saying no to a drug is easier when there is a *yes* behind it, and a sense of self is built out of small promises kept. That is what the rest of this page is for: the morning and midday pauses, the nightly review, the six joys, and the habit builder above. Start tiny and keep going.
+""")
+    st.caption("Sources: Newsweek, on the April 2026 executive order and ibogaine safety; Omni magazine, January 1983 (Patterson and NET); "
+               "Gariti et al. 1992 (placebo-controlled NET trial); Aberdeen review of NET (Fingleton and Matheson, 2012); SOTA Instruments Wellness Program Guide (2026); Rollo May, Freedom and Destiny (1981). "
+               "More detail is under Source [58] to [60] in the adult Longevity groups.")
+
+  with st.expander("🍵 Home remedies: how much evidence is there?", expanded=False):
+    st.caption("Not medical advice. Many home remedies have been used for centuries, and long use counts for something, especially for mild, short-lived problems. But long use is not the same as proof, so we label each one on the same scale as the rest of this page. "
+               "The labels are our own summary of published reviews, not the claims of the booklet that listed many of them [B18]. Herbs and supplements are not tightly regulated, so strength varies, and some interact with medicines: tell your pharmacist what you take.")
+    st.markdown("""
+**Moderate (reasonable trials or reviews)**
+- *Saline nasal rinse* for chronic congestion and sinus trouble; for colds it may ease symptoms a little. Use distilled, boiled-and-cooled or filtered water, never plain tap water (rare but serious amoeba infections have been traced to it), and wash the device after each use.
+- *Honey* for cough, ages 1 and up. Reviews found it better than no treatment. Never give honey to a baby under 12 months (botulism risk).
+- *Ginger* for nausea.
+- *Enteric-coated peppermint oil* for irritable bowel symptoms. It can worsen heartburn.
+- *Melatonin* for jet lag after eastward flights, taken near bedtime at the destination. Ask your doctor first, and know that products vary.
+- *Fibre, fluids and walking* for constipation; *probiotics* to cut diarrhea after antibiotics.
+- *A short nap* (about 20 minutes) for afternoon sleepiness, and a brisk walk for fatigue.
+
+**Emerging or mixed (some trials, results uneven)**
+- *Zinc lozenges* may shorten a cold if started early. Expect a bad taste or nausea in some people. Skip nasal zinc sprays, which have been linked to loss of smell.
+- *Echinacea and andrographis* for colds: mixed results and variable products. Echinacea can cause allergic reactions.
+- *Salt-water gargle* for a sore throat (and perhaps fewer colds). Low risk.
+- *Valerian and chamomile* for sleep: small, mixed studies. Valerian has rare liver reports. Skip chamomile if you are allergic to ragweed.
+- *Lavender aroma* for relaxation: a small effect at most.
+- *Cold packs, warm compresses and peppermint oil on the temples* for tension headaches: small studies, low risk. Keep oil out of your eyes.
+- *Sleeping on your side* for snoring that is worse on your back.
+
+**Traditional (long use, little formal testing)**
+- *Chicken soup and warm fluids* for colds: comfort and hydration, with some hints from lab studies.
+- *Lemon and honey drinks, thyme or ginger tea, fennel seed, hot milk*: soothing and low risk.
+- *Hiccup tricks* (holding your breath, a spoonful of sugar, a fright): no proof, and harmless.
+- *Clove oil or a spice paste for toothache*: may numb for a while. Clove oil can irritate and is poisonous to children if swallowed. See a dentist.
+
+**Dropped (the evidence says not worth it, or unsafe)**
+- *Bowl-of-boiling-water steam for colds.* Trials show no clear benefit, and scalds happen, especially to children.
+- *Oils or drops in the ear without a doctor's okay.* Not if the eardrum might be damaged; earache with fever or discharge needs a doctor.
+- *Fasting for a day or a strict bananas-rice-applesauce-toast diet for diarrhea.* That is old advice. Current advice is fluids, an oral rehydration solution if there is a lot of diarrhea or vomiting, and normal food as you can manage it.
+
+**See a doctor instead of home treatment** for trouble breathing, chest pain, a sudden severe or "worst ever" headache, headache with fever and a stiff neck, fever lasting more than three days, diarrhea lasting more than two days or with blood (or in babies and older people), blood in the stool, hoarseness for more than three weeks, earache with fever or discharge, snoring with pauses in breathing (possible sleep apnea), or tiredness that will not lift. In Saskatchewan, HealthLine is 811.
+""")
+
+  st.markdown("#### Our philosophy: small daily habits, kept for a lifetime")
+  st.markdown("""
+**The idea in one line.** Good daily habits are preventive maintenance for a person. You service a machine before it breaks, so you do not have to repair it after. You can do the same for your body, your attention and your relationships: a little, every day, until the habit carries itself.
+
+**Why habits first.** Most of what goes wrong (an accident, a missed warning sign, a bad month) does not begin with a big decision. It begins with a small lapse in attention that repeats. Most of what goes right is the same: small things done regularly. A habit costs little each day. One well-known study of habit formation found it took people about two months on average for a new habit to feel automatic, with a wide range from person to person, so the early weeks are the hard part. That is when reminders and a checklist help most.
+
+**Habits build self-awareness.** Repeating a small check teaches you to notice what you are doing while you are doing it. Gurdjieff called this self-observation, and Ouspensky described how easily we run on autopilot [44]. Erich Fromm wrote about being awake and aware, about concentrating on one thing at a time, and about listening with full attention [31][33][36]. Buddhist practice trains the same skill and calls it mindfulness. Self-awareness is the thing that lets you catch the mistake or the mood before it costs you. That is why the checklist asks you to pause, look and note, and not just to tick boxes.
+
+**Slow sculpture.** A useful picture for all of this comes from Theodore Sturgeon's science-fiction story "Slow Sculpture" (1970) [B7]. In it, a reclusive inventor has spent half his life shaping a fifteen-foot bonsai with water, light and wire. The shaping is always a cooperation: the tree refuses what it cannot do and answers back in its own way, until it is hard to say whether the man or the tree is the one being sculpted. A frightened woman who wanders into his orchard takes the same lesson to people: how you treat someone matters as much as what you do, and the twisted, damaged ones can turn out the most beautiful. The story is built around healing and belief, and it ends with the hint that two damaged people might shape each other. That is the whole program in one image: nobody is forced into a new shape; you are nudged, a little each day, working with your own nature and not against it, and the shape arrives. Research on habits points the same way, since small repeated steps tend to stick better than big dramatic ones. It is fiction and a metaphor, not evidence, and the cure in the story is invented. The story is worth reading for itself.
+
+Two plain rules of thumb go with it. First, measure yourself against who you were yesterday, not against someone else today: comparing upward with other people tends to sour mood, while comparing with your own past shows real progress. Second, start with your own house: put your own habits in order first, a small piece at a time, before trying to fix everyone else. You control that part, and others tend to follow what you do more than what you say.
+
+**You are what you repeatedly do.** In his 1945 lecture "Existentialism Is a Humanism" [B16], Jean-Paul Sartre argued that a person is not handed a fixed nature to live out. You exist first and become who you are through what you choose and do. In his view, unused potential does not count the way real deeds do: there is no love apart from loving acts, and a person is the sum of their actions. He also said that someone who gives in again and again makes himself a coward by doing so, and so can stop being one, because it is the acts and not a built-in temperament that define him. Feelings, he added, are formed through the actions we take, so we cannot wait for the right feeling before we act. That is very close to how habits work: character is built from small, repeated choices, and starting before you feel ready is part of the method. Therapies for low mood such as behavioural activation use a similar idea, acting first and letting mood follow [Moderate]. Two honest cautions. This is philosophy, not science, and Sartre's view is stronger than the evidence supports: temperament, upbringing, illness and circumstances matter too, and nobody chooses all of them. So use it as a push toward the next small action, never as a way to blame yourself or someone else, and especially not for depression or addiction, where getting help is part of acting. Read it for yourself if you can: it is short.
+
+**A purpose bigger than your complaints.** George Bernard Shaw put it this way in 1903, in the preface to *Man and Superman* [B17]: "This is the true joy in life, the being used for a purpose recognized by yourself as a mighty one; the being thoroughly worn out before you are thrown on the scrap heap; the being a force of Nature instead of a feverish selfish little clod of ailments and grievances complaining that the world will not devote itself to making you happy." Shaw's work is in the public domain, so we can quote it. It is a statement of values, not a research finding, but it fits what the studies of meaning and wellbeing keep pointing to: people do better with something worth working for.
+""")
+  _mp_video("https://www.youtube.com/watch?v=cOKR2m1URe8", "What have daily habits ever done for us? Apart from the health, the focus, the calm and the fewer accidents...")
+  st.markdown("""
+#### The same pattern in every tradition
+
+People have worked this out many times, in cultures that never met:
+
+- **Daily self-examination.** Confucius's student Zengzi examined himself three times a day (Analects 1.4). The Ignatian Examen is a nightly review of the day. Buddhist and Stoic practice include an evening look back [55].
+- **Fixed times for pause and prayer.** Muslims pray five times a day and observant Jews three. Monasteries ran the whole day by the Hours. These are scheduled reminders, backed by a community that keeps you at it [55][56].
+- **A weekly day of rest.** The Sabbath, Sunday and Friday prayers [55].
+- **Washing and hygiene.** Ritual washing before meals and prayer, and the Torah's rules on quarantine and on burying waste away from the camp [56].
+- **Moderation and fasting.** Ramadan, Yom Kippur, Lent, and food rules in several traditions [56].
+- **Giving.** Tzedakah, zakat, tithes and alms: charity as a routine, not an impulse [56].
+- **Gratitude.** Blessings, grace at meals, thanks on waking [55][56].
+- **Meeting together.** Weekly gatherings, visiting the sick, caring for strangers and widows [56].
+- **Movement.** Yoga, tai chi, qigong, the slow forms of the martial arts, and pilgrimage and walking in the West [54].
+- **Small and consistent beats big and rare.** A well-known hadith says the most loved deeds are the consistent ones, even if small. Pirkei Avot says you are not required to finish the work, but you may not walk away from it [55].
+""")
+  _mp_video("https://www.youtube.com/watch?v=XgchpzSaYJA", "Life of Brian: think for yourself, and do not take every sermon on faith, this one included.")
+  st.markdown("""
+#### Motivation: the hard part
+
+A reminder helps you remember. It cannot make you want to. What seems to help is the same thing the traditions use:
+
+1. **Meaning.** Know why you are doing it: the people, the work, the years you want. Covey called it beginning with the end in mind [28].
+2. **Start tiny.** Two minutes counts. Starting is the hard part and momentum does the rest.
+3. **See your wins.** Tick the box and watch the streak.
+4. **Other people.** A partner, a group, a teacher, a class. The traditions rarely ask you to do this alone.
+5. **Identity.** Not "I should walk" but "I am someone who walks."
+
+Awareness practice and movement practice can feed each other. A calm, attentive start makes the next session easier, and each session you finish is a small win. Research on meditation and motivation is modest and mixed, so treat this as a good bet and not a promise [54].
+
+
+**Courage, and showing up.** The psychologist Rollo May, in *The Courage to Create* [B5], argues that courage is not the absence of despair but the ability to move ahead in spite of it, and that it rests on being centred in your own being: a commitment that does not come from the middle of you is not really yours. People become who they are through the many small decisions of ordinary days. He adds that commitment and honest doubt belong together: believe fully, and stay open to being wrong. He also describes creative work as *encounter*, deep absorption in the thing in front of you, and warns that enjoying the idea of being about to do something is not the same as doing it. In habit terms: show up, do the small thing, and let who you are follow from what you repeatedly do. (Philosophy and clinical observation, not trial evidence.)
+
+**Empathy: understanding one another.** Empathy is feeling *with* someone; compassion is caring enough to help. Both grow with practice. Listen until the other person feels understood. State the best case of someone you disagree with before you answer. Spend time with people whose lives differ from yours. Take a few quiet minutes to wish people well. Your own hard times can be a bridge: remember how you wanted to be treated when you were hurting. You do not need to go looking for pain, and too much of it can numb a person instead of opening them. The studies are encouraging but modest, so call it a habit worth building, not a guarantee. It also keeps the rest honest: if we understand each other a little better, we argue a little less.
+
+""")
+  _mp_video("https://www.youtube.com/watch?v=kRwCPUEND1U", "The Black Knight: persistence, and a warning about ignoring the warning signs.", 40)
+  st.markdown("""
+#### Rewards, with your eyes open
+
+Some good habits are simply not fun. For those, a reward helps. B.F. Skinner's work on reinforcement [B6] found that a reward given every time teaches fast, but one given only some of the time, on an unpredictable schedule, keeps a habit going the longest, and the habit is the hardest to drop when the rewards stop [57]. That unpredictable schedule is the strongest of the common ones.
+
+How to use it, lightly:
+
+- **Early on, reward every time**, so the habit gets started.
+- **Make a list of six.** Write down six things you enjoy, ideally ones that also bring joy to someone else: a favorite song played loud, a game of crib or a quick game of chess (a 10-minute chess clock keeps it short), a call with a friend, a hot shower, time with someone you love, a funny video. After something dull or hard, **roll the dice** and do what comes up. Ask a friend, your partner or your AI helper to roll for you if you like. A reward that makes two people happy is the best kind.
+- **Then thin it out.** Once the habit is steady, reward only some of the rolls (say a one or a two) and give a plain "well done" on the rest, so the treat stays a pleasant surprise.
+- **Keep it harmless.** Not alcohol, gambling, binge food or money you cannot spare. The same trick is used by slot machines and endless feeds, which is why you do it knowingly and on your own terms.
+- **Keep your eyes open.** The point of this program is awareness. You are not tricking yourself; you are using a known quirk of how people learn to help you do things that are good for you. Notice the treat, enjoy it, and notice that you earned it.
+
+If you are in recovery from addiction or an eating disorder, skip food and risky rewards and ask your doctor or counsellor what works for you. Not medical advice.
+
+""")
+  _mp_video("https://www.youtube.com/watch?v=uyVPAlQQp5k", "Argument Clinic: your habits are not up for negotiation, but the reward is.")
+  st.markdown("""
+#### Attention and accidents
+
+Ounce of Prevention began with machines, and the lesson carries over. Most disasters in the accident report had a stretch of ordinary days in which small warnings were seen, put off or not passed on. Attention, habit and a second person checking are cheap compared with the cost of an event. A checklist is a way of paying attention on purpose, even when you do not feel like it. It is also, of course, the time to gather the key data of hours/kms on the machine upon which the scheduled maintenance depends.
+
+For factories, shops and fleets this is also what quality systems such as ISO 9001 ask to see: upkeep schedules kept, measuring tools calibrated, and problems traced to a root cause and fixed. Ounce helps you keep those records (see *Audit Readiness* on the Switchboard), and using it does not by itself make anyone certified. We make no claims about hospitals, clinics or medical-device certification.
+
+""")
+  _mp_video("https://www.youtube.com/watch?v=-8bqQ-C1PSE", "Anarcho-Syndicalist Commune: oversight, taking turns, and checking each other's work.")
+  st.markdown("""
+#### How we label what we tell you
+
+Ounce of Prevention organizes knowledge. It does not sell products or promise results. Every health tip carries a label that says how well it is supported:
+
+- **Strong:** several good randomized trials or reviews, or current guidelines agree.
+- **Moderate:** some trials, or consistent large observational studies.
+- **Emerging:** early or small trials, or a plausible mechanism with a few results.
+- **Traditional:** long use, case reports and expert experience, but no good trials. Case reports carry some weight, because they flag rare effects and ideas worth testing, but they cannot show that something works.
+- **Dropped:** contradicted by better evidence, or the risks outweigh the benefit.
+
+The more harm a tip could do, the higher the bar. Diet and exercise cannot be double-blinded, so for those we go by the best trials, reviews and guidelines available. Evidence changes, so treat the labels as our best reading today. Not medical advice: talk to your doctor.
+
+**What we do, and what we don't claim.** We try to base every health item on published, peer-reviewed research, preferring randomised trials, systematic reviews and national guidelines, and each item carries a label so you can see at a glance how strong the evidence is. Many items are Emerging or Traditional, meaning early, mixed or based on long use rather than proven by double-blind trials, and a lot of lifestyle questions cannot be tested that way. We check the information against the published sources ourselves; it has not been reviewed or approved by a doctor, professor or regulator, and science keeps changing. So it is our honest best reading of the evidence, not a guarantee. Not medical advice: talk to your doctor or pharmacist before changing treatment, supplements or exercise.
+
+#### Using AI as a thinking partner
+
+An AI helper can be a patient partner for the habits here: ask it to run your nightly review, roll the dice for your reward, challenge an assumption, draft a reminder, or help you think sideways about a stuck problem. Two cautions. AI makes mistakes and can sound sure when it is wrong, so check anything that matters, especially health claims. And keep private things private: your Private journal is encrypted on your own computer, so paste anything from it into an online AI service only if you choose to. Treat it like a good colleague: useful, not infallible, and you stay in charge. A small monthly review with a thinking partner (see Talk it over, above) is a good way to keep refining your habits, skills and goals; it is optional, and you can skip a month.
+
+#### From one person to the whole world
+
+The same idea works at every size. "An ounce of prevention is worth a pound of cure" comes from Benjamin Franklin, who wrote it in 1735 about preventing house fires [B8]. A person who checks small things daily stays well. A crew that inspects its machines before they fail stays safe and keeps the lights on. A town that tests its water and fixes its pipes on schedule keeps its people healthy. Some of the biggest gains in public health, such as clean water, sanitation and vaccination, came from prevention built into ordinary routines. Organizations have habits too, good and bad, and the habits are what you actually get. The cycle is the same each time: notice, check, fix it while it is small, and repeat. That is why this program covers people, machines, factories and towns with one set of tools. It starts where you have the most say: your own house, in order a bit at a time, before you try to fix the world. A healthy world is not built in one big leap. It is built from healthy routines, kept by a great many people, one small day at a time.
+
+#### What this is not
+
+It is not medicine, and it is not a religion. No faith is promoted or left out, and you may take what is useful from your own tradition or from none. Studies link regular practice and community with better wellbeing and longer life, but they are observational and cannot separate faith from social ties and habits. This page is a tool to keep you steady. Not medical advice. Check with your doctor. See Sources [28], [31], [33], [44], [54], [55], [56] and [57] in the Longevity plans.
+""")
+  st.markdown(
+    "**And laughter matters too.** Laughing with other people lightens the day, loosens tension and keeps you connected, "
+    "and many traditions and thinkers treated humor as part of a sane life. The research on laughter and health is modest, "
+    "so call it good company and a better mood, not a cure. Rollo May (*Man's Search for Himself*) [B5] tied humor to the sense of self: to laugh is to stand back from a problem and see it with some distance, instead of being swallowed up by it, and while you can laugh, fear does not fully own you. Viktor Frankl [B22], writing about his years in the camps, made the same point: humour was a trick of the spirit for standing back from your own situation, even for a few seconds. Hence this page: take a few minutes a day, a couple of times if you can, "
+    "to laugh. Preventive too."
+  )
+  st.caption("Further reading, paraphrased and not quoted: Rollo May, The Courage to Create (1975), Freedom and Destiny (1981) and Man's Search for Himself (1953). "
+             "These are philosophy and clinical observation, not trial evidence. Also: Howard Gardner, Frames of Mind (1983); Edward de Bono, Lateral Thinking (1970) and Six Thinking Hats (1985); a lens and a toolkit, both debated.")
+  with st.expander("🔎 Claims we checked: health headlines from 2025, with verdicts", expanded=False):
+    st.caption("A first pass through the 2025 monthly issues and two special issues of one popular US health magazine (not named here and not affiliated with us). "
+               "Claims are restated in our own words and checked against the research where we could. 'Web' means we read a source; 'General knowledge' means it matches what we know of the literature but was not re-checked; "
+               "'Not checked' means exactly that. It is not every claim in the magazines, and nothing here is medical advice: re-check anything that matters.")
+    _cc_df = pd.DataFrame(_CLAIMS_CHECKED, columns=["Claim", "Evidence", "Verdict", "What the research says", "Checked"])
+    _cc_pick = st.selectbox("Show", ["All"] + sorted(_cc_df["Verdict"].unique()), key="cc_pick")
+    if _cc_pick != "All": _cc_df = _cc_df[_cc_df["Verdict"] == _cc_pick]
+    st.dataframe(_cc_df, use_container_width=True, hide_index=True)
+
+  with st.expander("📚 Bibliography: the works behind this page", expanded=False):
+    st.caption("Where we draw on a book or article, we paraphrase it in our own words and cite it. We do not reproduce passages. Being listed here is not an endorsement by any author or publisher, "
+               "and these are philosophy, clinical observation and journalism as much as trial evidence, so read the evidence labels. Items marked [B1], [B2] and so on in the text refer to this list; the numbered sources like [28] for the health items are in the Sources rows of each plan.")
+    st.markdown("""
+**Books and stories**
+
+[B1] Branden, Nathaniel. *The Six Pillars of Self-Esteem* (1994). Sentence completion.
+
+[B2] Covey, Stephen R. *The 7 Habits of Highly Effective People* (1989). Also Sean Covey, *The 7 Habits of Highly Effective Teens* (1998) and *The 7 Habits of Happy Kids* (2008).
+
+[B3] de Bono, Edward. *Lateral Thinking* (1970) and *Six Thinking Hats* (1985).
+
+[B4] Gardner, Howard. *Frames of Mind* (1983).
+
+[B5] May, Rollo. *Man's Search for Himself* (1953), *The Courage to Create* (1975) and *Freedom and Destiny* (1981).
+
+[B6] Skinner, B. F. *Science and Human Behavior* (1953), on reinforcement.
+
+[B7] Sturgeon, Theodore. "Slow Sculpture" (short story, 1970). Read in *Slow Sculpture*, Volume XII of *The Complete Stories of Theodore Sturgeon* (North Atlantic Books, 2009).
+
+[B8] Franklin, Benjamin. The 1735 newspaper letter on preventing house fires that gave us "an ounce of prevention".
+
+[B16] Sartre, Jean-Paul. *Existentialism Is a Humanism* (lecture given in 1945, published 1946). Read in the Yale University Press edition, translated by Carol Macomber (2007).
+
+[B17] Shaw, George Bernard. *Man and Superman* (1903), the Epistle Dedicatory. Public domain.
+
+[B18] National Geographic Society. *88 Natural Remedies: Ancient Healing Traditions for Modern Times* (National Geographic Shorts e-book, 2013). Read; the evidence labels in the Home remedies box are ours, not the booklet's.
+[B19] McGuire W and Hull RFC (eds). *C.G. Jung Speaking: Interviews and Encounters* (Princeton University Press, 1977), pp. 450-452, the 1960 Gordon Young interview. Paraphrased from a secondary summary (Jungian Center) and a video talk; the book itself not read. Matches plan Source [73].
+[B20] Fromm, Erich. *Escape from Freedom* (1941) and *The Art of Loving* (1956). Paraphrased from general knowledge and from the Fromm works read earlier (plan Sources [12], [31]-[33]); no quotation. A psychoanalytic theory, so labelled as such.
+[B21] Regulator notices and statutes behind A Pound of Cure: Health Canada, marketing authorization of Casgevy for sickle cell disease and transfusion-dependent beta thalassemia (September 2024); US Food and Drug Administration, 2019 safety communication on young donor plasma infusions (no proven clinical benefit); Assisted Human Reproduction Act (Canada, S.C. 2004, c. 2), section 5 (prohibits human cloning). Checked by web search, November 2026; statements paraphrased.
+[B22] Frankl, Viktor E. *Man's Search for Meaning* (Beacon Press edition with the 1984 postscript on tragic optimism; originally 1946). Read in full from the e-book and paraphrased; no quotation. Theory and personal testimony, so labelled Traditional or Emerging, not as trial evidence. Matches plan Source [10].
+[B23] Published summaries of ISO 9001:2015 (clauses on infrastructure, monitoring and measuring resources, documented information, nonconformity and corrective action), ISO 55001 (asset management records) and ISO 14224 (reliability and maintenance data), read through secondary sources in November 2026; the standards themselves were not purchased or read. Used only for the Audit Readiness page and the calibration sample group.
+
+**Articles, studies and reports**
+
+[B9] *Omni* magazine, January 1983: article on Dr Meg Patterson and neuro-electric therapy (the "black box").
+
+[B10] Gariti and colleagues (1992): placebo-controlled trial of neuro-electric therapy.
+
+[B11] Fingleton and Matheson (2012): Aberdeen review of neuro-electric therapy.
+
+[B12] *Neuromodulation* 2020; 23(3): systematic review of noninvasive brain stimulation for opioid use disorder.
+
+[B13] Singer T et al., *Science* 2004; 303:1157-1162: watching a loved one in pain activates some of the same brain areas as feeling pain.
+
+[B14] Newsweek: report on the April 2026 US executive order and ibogaine research.
+
+[B15] SOTA Instruments, *Wellness Program Guide* (2026).
+
+**Video**
+- The Monty Python clips on this page belong to their owners and are linked, not copied.
+""")
+elif view_mode == "Audit Road":
+  title_row("🛣️ Audit Readiness", "btn_sw_page_road")
+  st.markdown("Customers and auditors often ask a shop, plant or fleet to show that its equipment is looked after and that problems get fixed. "
+              "This page is a simple road toward that, one step at a time, with Ounce doing the record keeping. "
+              "**Using Ounce does not make anyone certified or compliant with any standard; the auditor decides.**")
+  st.markdown("**Which ISO number?** It depends on who is asking, so ask your customer or auditor which one they mean. In short: "
+              "**ISO 9001** (quality management) is the one customers most often ask manufacturers and shops for. "
+              "**ISO 55001** (asset management) is the most directly about looking after physical assets over their life, and suits plants, utilities and fleets. "
+              "**ISO 45001** (occupational health and safety) is where incident reports, inspections and corrective action count. "
+              "**ISO 14224** is not a certificate but a guide to collecting equipment failure data, mostly used in oil, gas and process industries.")
+  st.markdown("#### The road, step by step")
+  st.markdown("""
+1. **Start:** enter your assets and let Ounce schedule the upkeep (*Asset Groups*, *Checklists*, *Sched. Maint.*).
+2. **Keep records:** sign off the work as it is done (*Completed (W/O)*) and keep the history.
+3. **Control your measuring tools:** use the *Factory Measuring & Test Equipment* group for before-use checks, verification and calibration.
+4. **Handle problems properly:** log incidents with a root cause and a corrective action (*Incident Reports*), and use the *A Pound of Cure* page.
+5. **Turn on the extras when you are comfortable:** failure fields and the audit trail (switch below).
+6. **Review and improve:** management review, training records and document control stay in your own quality system for now (see the list at the bottom).
+""")
+  _aud_now = get_setting("audit_features", "0") == "1"
+  st.markdown("<style>.st-key-aud_feat_box [data-baseweb='checkbox'] > span:first-child, .st-key-aud_feat_box label > span:first-child { border: 3px solid #1b5e20 !important; "
+              "background-color: #ffffff; transform: scale(1.25); margin-right: 10px; } .st-key-aud_feat_box p { font-weight: 700 !important; font-size: 1.05rem !important; }</style>", unsafe_allow_html=True)
+  _aud_new = st.checkbox("Turn on failure fields and the audit trail", value=_aud_now, key="aud_feat_box",
+                         help="Adds a Record a Breakdown tab to Completed (W/O) and an Audit trail under Users & Security. Off by default so the program stays simple.")
+  if _aud_new != _aud_now:
+    set_setting("audit_features", "1" if _aud_new else "0"); st.rerun()
+  if _aud_new:
+    st.success("On. You will now find: **Record a Breakdown** (Switchboard > Completed (W/O) > third tab) and **Audit trail** (Switchboard > Users & Security).")
+  st.caption("Off by default so the program stays simple. When on, breakdowns can be recorded with failure mode, cause, downtime and meter reading, "
+             "and sign-offs, breakdown records and incident log saves are written to an audit trail (who, when, what). Turning it off hides them and stops new logging; nothing is deleted.")
+  st.markdown("---")
+  st.markdown("### Helping you prepare for audits")
+  st.markdown(
+    "An audit looks for evidence that equipment is looked after and that problems get fixed. Ounce helps you keep many of those records. "
+    "**Using it does not make an organization certified or compliant with any standard; the auditor decides.** "
+    "The table below is based on published summaries of ISO 9001:2015, ISO 55001 and ISO 14224 (we have not read the standards themselves), so check the wording with your own auditor.")
+  st.markdown("""
+| What auditors commonly ask for | Where it lives in Ounce |
+|---|---|
+| Upkeep schedules and inspection results (ISO 9001, infrastructure) | Sched. Maint., Checklists, Completed (W/O) |
+| Calibration or verification of measuring equipment, with status (ISO 9001, monitoring and measuring resources) | The *Factory Measuring & Test Equipment* sample group: before-use checks, verification, calibration and certificate notes, out-of-tolerance review |
+| Records that are kept and can be found (ISO 9001, documented information) | Completed work orders, printable reports, Back Up Database |
+| Problems and corrective action with root cause (ISO 9001, nonconformity) | Incident Reports (root cause and corrective action sections), Work Orders, the *A Pound of Cure* page |
+| An asset register with identity, location and importance (ISO 55001) | Asset Groups and their attributes |
+| Parts used and stock held | Parts Inventory and its movement history |
+| Who did the work | Technician name on completed orders; users and roles under Users & Security |
+| Failure data: mode, cause, downtime, repair time (ISO 14224) | Completed (W/O), *Record a Breakdown* tab, with a summary of common causes and modes |
+| Who changed what, and when | The *Audit trail* under Users & Security (sign-offs, breakdown records, incident log saves) |
+""")
+  st.markdown("**What Ounce does not do yet:** a record of every edit to assets, task schedules and parts (only sign-offs, breakdowns and incident saves are logged so far); "
+              "training and competence records; a risk register, management-of-change forms and management review minutes; KPI trend pages such as PM compliance and MTBF; version control for procedures; and a data-retention policy template. "
+              "Until those exist, keep them alongside Ounce in your own quality system.")
+
+elif view_mode == "Pound of Cure":
+  title_row("🩹 A Pound of Cure", "btn_sw_page_cure")
+  st.markdown(
+    "*An ounce of prevention is worth a pound of cure* [B8]. This page is the other half: what to do **after** something breaks anyway. "
+    "In maintenance language that is **corrective** maintenance (fix it after it fails), next to **preventive** (on a schedule), "
+    "**predictive** (when the readings say it is about to fail) and **run to failure** (on purpose, for cheap, safe parts). "
+    "Nobody gets through life without a breakdown, so the aim is to be ready, spend wisely, and learn from it. "
+    "**Not medical advice: talk to your doctor. In an emergency call 911; in Saskatchewan, HealthLine 811 is the nurse line.** "
+    "I'm not a lawyer, accountant or doctor.")
+
+  with st.expander("🧍 When a person breaks: be ready before the bad day", expanded=False):
+    st.markdown("""
+**1. Keep a one-page health sheet.** Your name and birth date, health card number, allergies, every medicine with its dose, conditions, past operations, your doctor and pharmacy, and who to call. Add who speaks for you if you cannot, and what you would want. Keep a paper copy in your wallet or on the fridge. Keep it off shared computers and out of online chats.
+
+**2. Go to appointments with a list.** Write down your symptoms with dates, bring every medicine, and take a second person to listen and write. Good questions, in plain words:
+- What is the most likely cause, and what else could it be?
+- What are my options, including waiting or doing nothing?
+- What are the benefits and risks of each, in real numbers ("1 in 20") and not just "small"?
+- What should make me call back or go to Emergency?
+- Can I have a copy of my test results?
+
+**3. A second opinion is normal.** For a serious diagnosis, major surgery or unclear options, doctors expect it. Ask for your records and book it before deciding, unless it is an emergency. *Common sense, not a trial result.*
+
+**4. Know who pays.** In Canada, the provincial plan generally covers medically necessary doctor and hospital care, while many other costs vary by province or plan: prescriptions outside hospital, dental, vision, physio, ambulance and equipment. Check your workplace or private plan **before** you need it. An injury at work goes to the workers' compensation board, and the sooner it is reported the better. Keep receipts: medical expenses may be claimable on a tax return, so ask the Canada Revenue Agency or an accountant. A small cash cushion for the unexpected helps more than almost any product.
+
+**5. The after-care is half the cure.** Rehab, physio, follow-up visits and the boring exercises decide a lot of the outcome. Ask for a plan with dates, and put the tasks in the app.
+
+**6. Then go back to prevention.** After every breakdown ask what the body was telling you, and what ounce of prevention would have caught it earlier. That is the same loop as for machines.
+""")
+    ask_claude("Ask Claude to help prepare for an appointment", "Help me prepare for a medical appointment. Ask me about my symptoms and questions one at a time, then give me a short list to bring. This is for preparing, not diagnosing. The reason for the visit is: ")
+
+  with st.expander("⚙️ When a machine breaks: repair, replace or run on?", expanded=False):
+    st.markdown("""
+**First, safety.** Stop, lock out and tag out the energy sources before anyone reaches in (see *LOTO* in the Glossary), and make sure nobody is hurt or exposed.
+
+**Then, record it.** Open a work order and, if anyone was hurt or it was a near miss, an incident report. A breakdown that is not written down gets repeated.
+
+**Ask why, not just what.** Keep asking "why?" until you reach something you can fix: not "the bearing failed" but "the grease point was never on the schedule". Then do the part most people skip: **add or adjust a preventive task so it is caught next time**. That is how the pound of cure pays for the next ounce.
+
+**Repair, replace or run on?** Rules of thumb, not laws:
+- Compare the repair with the cost of replacing, **and** with the cost of downtime while you wait.
+- The same part failing a third time usually means the cause is somewhere else.
+- Old equipment near the end of its expected life, with parts getting scarce, leans toward replacing.
+- A safety-critical failure leans toward doing it properly, not cheaply.
+- Keep the critical spare parts on the shelf. The Parts Inventory shows which ones.
+""")
+    _pc1, _pc2, _pc3 = st.columns(3)
+    with _pc1:
+      if st.button("Open WorkOrders", key="pc_wo", use_container_width=True): st.session_state.view_mode_override = "WorkOrders (W/O)"; st.session_state["from_pound"] = True; st.rerun()
+    with _pc2:
+      if st.button("Open Incident Reports", key="pc_ir", use_container_width=True): st.session_state.view_mode_override = "Incident Reports"; st.session_state["from_pound"] = True; st.rerun()
+    with _pc3:
+      if st.button("Open Parts Inventory", key="pc_pi", use_container_width=True): st.session_state.view_mode_override = "Parts Inventory"; st.session_state["from_pound"] = True; st.rerun()
+    ask_claude("Ask Claude: repair or replace?", "Help me decide whether to repair or replace a piece of equipment. Ask me about its age, repair history, repair quote, replacement cost, downtime cost and safety, then compare the options. The equipment is: ")
+
+  with st.expander("🔭 Horizon watch: the edge of medicine, honestly labelled (dated November 2026)", expanded=False):
+    st.markdown("""
+This changes fast and it is the favourite hunting ground of people selling hope, so every line carries our usual label, and **nothing here is a recommendation or an endorsement of any clinic or product.** Check anything that matters with your doctor, and look for newer information.
+
+- **Blood-forming stem cell (bone marrow) transplants.** Established treatment for certain blood cancers and blood disorders, and the reason "stem cell" sounds so promising. *Strong, for those specific uses.*
+- **Approved gene therapies.** In 2023 and later, a CRISPR-based treatment for sickle cell disease and transfusion-dependent beta thalassemia was approved in several countries, including Canada in September 2024. Real, but for narrow groups, complex to deliver and very costly [B21]. *Moderate: proven for those diseases only.*
+- **Lab-grown tissue and "reprogrammed" (iPS) cells.** Early human trials for some eye and nerve conditions. Promising but early. *Emerging.*
+- **Stem-cell injections sold by clinics for joints, ageing, pain or "anti-ageing".** Regulators in several countries have warned about unapproved products and serious harms. *Not supported by good trials for most uses; treat with great caution.*
+- **"Young blood" plasma infusions.** The US FDA warned in 2019 that there is no proven benefit and that it carries risks [B21]. *Dropped.*
+- **Cloning.** Cloning a human is **not a medical treatment**, and it is prohibited in Canada under the Assisted Human Reproduction Act [B21]. Growing tissue matched to a patient is laboratory research, not a standard therapy. *Research only.*
+- **Longevity drugs and supplements** (for example rapamycin, metformin, senolytics, NAD boosters). Interesting in animals and some early human work, but none is proven to extend healthy human life. *Emerging.*
+- **"Biological age" blood and epigenetic clock tests.** Useful for research; not reliable enough to steer your own decisions. *Emerging.*
+
+**Five red flags when someone sells a breakthrough:**
+1. The proof is testimonials and before-and-after stories, not a trial.
+2. There is no registered trial (look up the name at ClinicalTrials.gov) and no published results in humans.
+3. The seller profits, and the price is high and paid upfront.
+4. It claims to treat many unrelated conditions.
+5. You are told to hurry, or to stop your other treatment.
+
+A cheaper, safer way to reach the frontier: ask your doctor whether a registered clinical trial for your condition is open near you.
+""")
+  st.markdown("---")
+  st.caption("Sources: [B8] Franklin; [B21] regulator notices and statutes, checked November 2026 (see the bibliography on the Philosophy page). Evidence labels as used throughout the app.")
 
 elif view_mode == "Glossary":
   title_row("📖 Universal Maintenance Glossary & Acronyms", "btn_sw_page8")
+  ask_claude("Ask Claude to explain a maintenance term", "Please explain this maintenance or reliability term in plain words, with a short example from industry: ")
   with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
     glossary_df = pd.read_sql('SELECT TermID, Term, Acronym, Definition, AssetGroup FROM "Glossary"', conn)
   if not glossary_df.empty:
@@ -4581,6 +6740,8 @@ elif view_mode == "Glossary":
 
 elif view_mode == "Incident Reports":
   st.subheader("🚨 Incident & Compliance Reporting (NTSB / OSHA / WCB)")
+  ask_claude("Ask Claude to help find the root cause", "Help me find the root cause of an equipment failure using the five whys. Ask me questions one at a time. Please do not include names or personal details. What happened: ")
+  st.caption("Writing up a problem for an audit? Record the root cause and the corrective action in each incident. Optional extras (failure fields, audit trail) are on the Audit Readiness page.")
   st.markdown("<style>.st-key-btn_sw_incidents, .st-key-incident_form_type, .st-key-dl_incident_form, .st-key-reg_country, .st-key-reg_region, .st-key-btn_save_incidents"
               " { width: 250px !important; max-width: 100% !important; }"
               ".st-key-incident_form_type, .st-key-reg_region { margin-left: auto !important; margin-right: auto !important; }"
@@ -4771,6 +6932,7 @@ elif view_mode == "Incident Reports":
         conn.commit()
       for _g in _gone:
         for (_fid,) in sqlite3.connect(DB_PATH, timeout=20.0).execute('SELECT FileID FROM "IncidentFiles" WHERE IncidentID = ?', (_g,)).fetchall(): delete_incident_file(_fid)
+      log_change("Incident log saved", "IncidentReports", "", f"{len(edited_incidents)} rows on screen; deleted incident IDs: {_gone or 'none'}")
       st.success("Incident log updated successfully!"); st.rerun()
 
   with _tab_files:
@@ -4893,6 +7055,23 @@ elif view_mode == "Checklists":
     with b3:
       if st.button("Switchboard", key="btn_sw_chk", use_container_width=True): st.session_state.view_mode_override = "Switchboard"; st.rerun()
       print_slot_all = st.container()
+
+  if selected_sector == "Longevity and Awareness":      # reminder of your active habits (tick them in the Habit Builder)
+    try: _ch_list = json.loads(get_setting("habit_tracker", "[]"))
+    except Exception: _ch_list = []
+    if isinstance(_ch_list, list) and _ch_list:
+      _ch_today = _date.today().isoformat()
+      _ch_lines = [("✅ " if _ch_today in _x.get("done", []) else "⬜ ") + str(_x.get("name", "Habit")) for _x in _ch_list if isinstance(_x, dict)]
+      _chh0, _chh_r = st.columns([2.0, 4.6])      # same split as the button area above, so the button lines up under Switchboard
+      with _chh0:
+        st.markdown("**Your habits today:**")
+      with _chh_r:
+        _chh1, _chh2 = st.columns([2, 1])
+        with _chh1:
+          st.markdown(" &nbsp;·&nbsp; ".join(_ch_lines))
+      with _chh2:
+        if st.button("🌱 Habit Builder", key="chk_to_hab", use_container_width=True):
+          st.session_state.view_mode_override = "Monty Python"; st.session_state["hb_open"] = True; st.session_state["hb_scroll"] = True; st.rerun()
 
   if not assets_in_cat.empty:
     asset_options = assets_in_cat.apply(lambda r: f"{r['AssetID']} — {r['Year_Make_Model']}", axis=1).tolist()
@@ -5020,6 +7199,12 @@ elif view_mode == "Checklists":
       st.rerun()
 
 elif view_mode == "Sched. Maint.":
+    if sector_of(selected_category) == "Longevity and Awareness":
+        ask_claude("Ask Claude to help write a health routine",
+                   "Help me write a clear, realistic routine health and wellness task for the group of people I am planning for: what to do, how often, what I need, any safety cautions, "
+                   "and how I will know it is working. This is general information, not medical advice. The group is: " + _short_group(selected_category))
+    else:
+        ask_claude("Ask Claude to help write a maintenance task", "Help me write a clear preventive maintenance task for a piece of equipment: what to check, how often, what tools and safety steps, and what a good result looks like. The equipment is: ")
     with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
         trucks_df = pd.read_sql('SELECT * FROM "Trucks" WHERE Category = ?', conn, params=(selected_category,))
         
@@ -5159,10 +7344,13 @@ elif view_mode == "Sched. Maint.":
         
         for active_tab_obj, tab_choice in {tab_a: "Prevention A", tab_b: "Prevention B", tab_c: "Prevention C", tab_comp: "Compliance"}.items():
             with active_tab_obj:
+                if tab_choice == "Compliance":
+                    st.caption("Keeping records for audits or inspections? See the optional steps on the Audit Readiness page (save your changes here first).")
+                    if st.button("Audit Readiness", key="comp_to_road"): st.session_state.view_mode_override = "Audit Road"; st.rerun()
                 st.markdown("<div style='display:flex; white-space:nowrap; font-weight:900; color:#000080; font-size:12pt; margin-bottom:4px;'>"
                             "<div style='width:335px; flex:none;'></div>"
-                            "<div style='width:190px; flex:none; text-align:center; border-bottom:2px solid #000080;'>Last Done</div>"
-                            "<div style='width:190px; flex:none; text-align:center; border-bottom:2px solid #000080; margin-left:2px;'>Trigger Interval</div>"
+                            "<div style='width:168px; flex:none; text-align:center; border-bottom:2px solid #000080;'>Last Done</div>"
+                            "<div style='width:148px; flex:none; text-align:center; border-bottom:2px solid #000080; margin-left:2px;'>Trigger Interval</div>"
                             "</div>", unsafe_allow_html=True)
                 with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
                     tasks_df = pd.read_sql('SELECT TaskName, Date_Last_Done, Meter_At_Last, Days_Between, Meter_Between, ToolsNeeded, ManHours, TaskDescription, PersonnelQualifications, SafetyPrecautions, EstimatedPartsCost, RequiredConsumables FROM "Preventive_Schedules" WHERE AssetID = ? AND TabGroup = ?', conn, params=(asset_id_clean, tab_choice))
@@ -5190,10 +7378,10 @@ elif view_mode == "Sched. Maint.":
                     key=f"editor2_{tab_choice}_{asset_id_clean}", 
                     column_config={
                         "TaskName": st.column_config.TextColumn("Maintenance Tasks", width=300, pinned=True), 
-                        "Date_Last_Done": st.column_config.TextColumn("Date", width=90), 
-                        "Meter_At_Last": st.column_config.TextColumn("Kms/Hrs", width=100), 
-                        "Days_Between": st.column_config.TextColumn("Days", width=80), 
-                        "Meter_Between": st.column_config.TextColumn("Kms/Hrs", width=110), 
+                        "Date_Last_Done": st.column_config.TextColumn("Date", width=84), 
+                        "Meter_At_Last": st.column_config.TextColumn("Kms/Hrs", width=84), 
+                        "Days_Between": st.column_config.TextColumn("Days", width=64), 
+                        "Meter_Between": st.column_config.TextColumn("Kms/Hrs", width=84), 
                         "ToolsNeeded": st.column_config.TextColumn("Tools & Equip"), 
                         "ManHours": st.column_config.NumberColumn("ManHours", format="%.1f", width="small"), 
                         "TaskDescription": st.column_config.TextColumn("TaskDescription"), 
@@ -5333,6 +7521,8 @@ elif view_mode == "Completed (W/O)":
     with c_head:
         st.subheader("Completed & Signed-Off Work Orders Archive", anchor=False)
         st.markdown("*(Interactive Sign-Off and Historical Compliance Record)*")
+        if get_setting("audit_features", "0") != "1":
+            st.markdown("*(Optional extras: failure fields and an audit trail. See Audit Readiness on the Switchboard.)*")
         st.markdown(f"<p style='margin-top:-6px;'><b>Date and Time Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>", unsafe_allow_html=True)
     with c_btns:
         st.markdown("<style></style>", unsafe_allow_html=True)
@@ -5347,7 +7537,9 @@ elif view_mode == "Completed (W/O)":
             except ImportError:
                 st.error("ReportLab not installed. Run: python -m pip install reportlab")
 
-    tab_sign, tab_hist = st.tabs(["Sign-Off Sheet", "History"])
+    _AUD_ON = get_setting("audit_features", "0") == "1"
+    tab_sign, tab_hist, *_tab_more = st.tabs(["Sign-Off Sheet", "History"] + (["Record a Breakdown"] if _AUD_ON else []))
+    tab_fail = _tab_more[0] if _tab_more else None
 
     # ---------------- TAB 1: sign-off sheet ----------------
     with tab_sign:
@@ -5416,6 +7608,83 @@ elif view_mode == "Completed (W/O)":
                 except ImportError:
                     st.error("ReportLab not installed. Run: python -m pip install reportlab")
                 st.dataframe(hist_df, use_container_width=True, hide_index=True, row_height=30)
+
+    if _AUD_ON and tab_fail is not None:
+        # ---------------- TAB 3: record a breakdown (failure data) ----------------
+        with tab_fail:
+            st.caption("Pound of cure: when something breaks, record it here with the failure details. Over time this shows which failures and causes keep coming back, "
+                       "and how much downtime they cost. The fields follow the ideas in the reliability data standard ISO 14224 (we worked from published summaries, not the standard itself). "
+                       "Then ask why it failed, and add or adjust a preventive task so it is caught next time.")
+            _FMODES = ["Fail to start", "Spurious stop", "External leak", "Internal leak", "Vibration", "Overheating", "Abnormal noise", "Low output or poor performance", "Electrical fault", "Structural damage or crack", "Other"]
+            _FMECHS = ["Not known", "Wear", "Corrosion", "Fatigue", "Erosion", "Overload", "Overheating", "Contamination", "Lack of lubrication", "Loose or vibration", "Electrical breakdown", "Impact damage", "Ageing or degradation", "Other"]
+            _FCAUSES = ["Wear or age", "Design or manufacture", "Installation", "Operation or misuse", "Maintenance missed or poor", "External (weather, power, damage)", "Not known yet"]
+            if not cat_assets:
+                st.info("No assets in this group yet.")
+            else:
+                with st.form("fail_form", clear_on_submit=True):
+                    _fa1, _fa2, _fa3 = st.columns(3)
+                    with _fa1:
+                        _f_asset = st.selectbox("Asset", cat_assets, key="fail_asset")
+                        _f_date = st.date_input("Date of failure", value=_date.today(), key="fail_date")
+                    with _fa2:
+                        _f_mode = st.selectbox("How it failed (failure mode)", _FMODES, key="fail_mode")
+                        _f_cause = st.selectbox("Why it failed (cause)", _FCAUSES, key="fail_cause")
+                    with _fa3:
+                        _f_mech = st.selectbox("Mechanism", _FMECHS, key="fail_mech")
+                        _f_meter = st.text_input("Meter reading", key="fail_meter", help="Hours, km or whatever the machine's meter counts")
+                    _fb1, _fb2, _fb3, _fb4 = st.columns(4)
+                    with _fb1: _f_down = st.number_input("Downtime (hours)", min_value=0.0, step=0.5, key="fail_down")
+                    with _fb2: _f_hrs = st.number_input("Repair labor (hours)", min_value=0.0, step=0.5, key="fail_hrs")
+                    with _fb3: _f_cost = st.number_input("Total cost", min_value=0.0, step=10.0, key="fail_cost")
+                    with _fb4: _f_init = st.text_input("Technician initials", key="fail_init")
+                    _f_parts = st.text_input("Parts used", key="fail_parts")
+                    _f_notes = st.text_area("What was done, and what will stop it happening again (corrective action)", key="fail_notes")
+                    _f_go = st.form_submit_button("Save breakdown record")
+                if _f_go:
+                    if not (_f_init or "").strip():
+                        st.error("Enter the technician's initials.")
+                    else:
+                        try:
+                            with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
+                                _cur = conn.execute('''INSERT INTO "Completed_Work_Orders" ("AssetID","TaskName","DateCompleted","TechnicianName","LaborHours","PartsUsed","TotalCost","Notes",
+                                                "FailureMode","FailureCause","FailureMechanism","DowntimeHours","MeterReading") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+                                             (_f_asset, "Breakdown repair", _f_date.isoformat(), _f_init.strip(), float(_f_hrs), (_f_parts or "").strip(), float(_f_cost), (_f_notes or "").strip(),
+                                              _f_mode, _f_cause, (_f_mech if _f_mech != "Not known" else ""), float(_f_down), (_f_meter or "").strip()))
+                                conn.commit()
+                            _new_id = _cur.lastrowid
+                            log_change("Breakdown recorded", "Completed_Work_Orders", f"BD_ID {_new_id}: {_f_asset}", f"{_f_mode}; cause: {_f_cause}; downtime {_f_down:g} h")
+                            st.success(f"Breakdown recorded as BD_ID {_new_id}. Now ask why, and add or adjust a preventive task so it is caught next time.")
+                        except sqlite3.Error as _e:
+                            st.error(f"Database error, nothing was saved: {_e}")
+                with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
+                    _fdf = pd.read_sql('''SELECT c.HistoryID AS "BD_ID", substr(c.DateCompleted,1,10) AS "Date", c.AssetID AS "Asset", c.FailureMode AS "Failure mode", c.FailureCause AS "Cause",
+                                               c.FailureMechanism AS "Mechanism", c.DowntimeHours AS "Downtime (h)", c.LaborHours AS "Repair (h)", c.TotalCost AS "Cost", c.MeterReading AS "Meter",
+                                               c.TechnicianName AS "Tech", c.PartsUsed AS "Parts", c.Notes AS "Notes"
+                                        FROM "Completed_Work_Orders" c JOIN "Trucks" t ON c.AssetID = t.AssetID
+                                        WHERE t.Category = ? AND c.FailureMode IS NOT NULL AND c.FailureMode <> ""
+                                        ORDER BY c.DateCompleted DESC, c.HistoryID DESC''', conn, params=(selected_category,))
+                if _fdf.empty:
+                    st.caption("No breakdowns recorded for this group yet.")
+                else:
+                    _fm1, _fm2, _fm3 = st.columns(3)
+                    _fm1.metric("Breakdowns recorded", len(_fdf))
+                    _fm2.metric("Downtime (hours)", f"{pd.to_numeric(_fdf['Downtime (h)'], errors='coerce').fillna(0).sum():,.1f}")
+                    _fm3.metric("Repair cost", f"${pd.to_numeric(_fdf['Cost'], errors='coerce').fillna(0).sum():,.2f}")
+                    _fc1, _fc2 = st.columns(2)
+                    with _fc1:
+                        st.markdown("**Most common causes**")
+                        st.dataframe(_fdf["Cause"].value_counts().rename_axis("Cause").reset_index(name="Count"), use_container_width=True, hide_index=True)
+                    with _fc2:
+                        st.markdown("**Most common failure modes**")
+                        st.dataframe(_fdf["Failure mode"].value_counts().rename_axis("Failure mode").reset_index(name="Count"), use_container_width=True, hide_index=True)
+                    st.markdown("**Breakdown records**")
+                    st.dataframe(_fdf.drop(columns=["Parts", "Notes"]), use_container_width=True, hide_index=True)
+                    st.markdown("**Memo for a record** (the full notes and parts stay with the record)")
+                    _memo_opts = {f"BD_ID {int(r['BD_ID'])}  {r['Date']}  {r['Asset']}  {r['Failure mode']}": r for _, r in _fdf.iterrows()}
+                    _memo_pick = st.selectbox("Pick a BD_ID to read its memo", list(_memo_opts.keys()), key="fail_memo_pick")
+                    _mr = _memo_opts[_memo_pick]
+                    st.text_area("Parts used", value=str(_mr["Parts"] or ""), disabled=True, key=f"fail_memo_parts_{int(_mr['BD_ID'])}")
+                    st.text_area("What was done, and what will stop it happening again", value=str(_mr["Notes"] or ""), height=140, disabled=True, key=f"fail_memo_notes_{int(_mr['BD_ID'])}")
 elif view_mode == "WorkOrders (W/O)":
     wo_head = st.empty()      # heading is filled in below, once we know which scope is showing
     
@@ -5732,6 +8001,11 @@ elif view_mode == "WorkOrders (W/O)":
 elif view_mode == "Reports/Queries":
   if "query_view" not in st.session_state: 
       st.session_state.query_view = "Asset Group"
+  _rq1, _rq2 = st.columns([4, 1.4])
+  with _rq2:
+    if st.button("Asset Health and Maintenance", key="rq_to_fleet", use_container_width=True): st.session_state.view_mode_override = "Fleet Health"; st.rerun()
+  with _rq1:
+    st.caption("Looking for the old Fleet Health page (maintenance mix, spend and maintenance strategies)? It is now called Industrial Asset Health and Maintenance: use the button on the right.")
   
   if os.path.exists("world.jpg"): 
       st.image("world.jpg", use_container_width=True)
@@ -5893,7 +8167,7 @@ elif view_mode == "Asset Groups":
   with sqlite3.connect(DB_PATH, timeout=20.0) as conn:
     cursor = conn.cursor()
     cursor.execute('SELECT DISTINCT Category FROM "Trucks" WHERE Category IS NOT NULL AND Category != ""')
-    existing_groups = [r[0] for r in cursor.fetchall()]
+    existing_groups = sorted([r[0] for r in cursor.fetchall()], key=str.lower)
 
   if not existing_groups:
     existing_groups = FULL_CATEGORIES_LIST

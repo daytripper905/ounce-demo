@@ -11,6 +11,12 @@ os.environ["OUNCE_DB_PATH"] = data
 os.chdir(bundle)
 from streamlit.testing.v1 import AppTest
 
+# The private journal needs the cryptography library inside the bundle (otherwise customers see a yellow notice).
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+_k = AESGCM.generate_key(bit_length=256); _n = os.urandom(12)
+assert AESGCM(_k).decrypt(_n, AESGCM(_k).encrypt(_n, b"journal test", None), None) == b"journal test"
+print("cryptography OK (private journal can encrypt)")
+
 def run():
     at = AppTest.from_file(app, default_timeout=180)
     at.run()

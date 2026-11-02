@@ -5,7 +5,7 @@
 #     -Out   C:\Temp\OunceBundle     where to build (default shown)
 #     -Stamp                         stamp your public key into the bundle's app.py
 #                                    (needs license_private.key in this folder)
-#     -Demo                          build the free DEMO (30 days, 10 own assets); also writes the zip
+#     -Demo                          build the free DEMO (30 days, 8 own assets, 5 own groups); also writes the zip
 #     -PublicKey <64 hex>            stamp this PUBLIC key (no private key file needed - used by the automatic build)
 # VENDOR-ONLY. Never ship this file.
 
@@ -54,7 +54,7 @@ $py = Join-Path $pyDir "python.exe"
 if ($LASTEXITCODE -ne 0) { throw "get-pip failed" }
 # Versions are PINNED to the ones that passed run_selftest_full.bat on 2026-10-18 (156/156). The app uses features newer Streamlit
 # releases may remove. To move to newer versions: change these numbers, rebuild, then re-run run_selftest_full.bat and check by eye.
-& $py -m pip install --no-warn-script-location "streamlit==1.66.0" "pandas==3.0.6" "reportlab==5.0.1"
+& $py -m pip install --no-warn-script-location "streamlit==1.66.0" "pandas==3.0.6" "reportlab==5.0.1" "cryptography>=42"
 if ($LASTEXITCODE -ne 0) { throw "pip install failed" }
 
 Write-Host "5/7  Copy the app files (public files only)"
