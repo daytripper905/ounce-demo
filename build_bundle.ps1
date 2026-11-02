@@ -84,8 +84,13 @@ base = "light"
 @echo off
 cd /d "%~dp0"
 title An Ounce of Prevention
-echo Starting An Ounce of Prevention...
-echo Your browser will open in a moment. Close this black window to stop the program.
+echo.
+echo  Starting An Ounce of Prevention...
+echo.
+echo  The first start can take up to a minute or two, so please be patient.
+echo  Your web browser will open by itself when the program is ready.
+echo  Leave this black window open while you work. Close it to stop the program.
+echo.
 set "OUNCE_DB_PATH=%~dp0"
 "%~dp0python\python.exe" -m streamlit run app.py
 pause
@@ -102,10 +107,12 @@ you can still look, print and back up - nothing is deleted.
 
 TO START
 1. Right-click the downloaded zip file and choose "Extract All". (Do not run it from inside the zip.)
+   Extracting takes a few minutes because the program carries everything it needs. Please let it finish.
 2. Open the extracted folder and double-click  "Start An Ounce of Prevention.bat".
 3. Windows may say "Windows protected your PC". That is normal for new software from a small company.
    Click "More info", then "Run anyway".
-4. Your web browser opens the program. Nothing is sent over the internet.
+4. The first start can take up to a minute or two. Your web browser then opens the program by itself.
+   Nothing is sent over the internet.
 5. To stop: close the black window.
 
 Your data is stored in the file OunceOfPrevention.db in this folder. Copy this whole folder to keep it safe or move it.
